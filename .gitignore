@@ -74,6 +74,8 @@ docs/_build/
 # PyBuilder
 .pybuilder/
 target/
+armorer_guard/bin/armorer-guard
+armorer_guard/bin/armorer-guard.exe
 
 # Jupyter Notebook
 .ipynb_checkpoints
