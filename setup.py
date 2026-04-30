@@ -5,7 +5,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from setuptools import find_packages, setup
+from setuptools import Distribution, find_packages, setup
 from setuptools.command.build_py import build_py as _build_py
 from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 
@@ -40,7 +40,13 @@ class bdist_wheel(_bdist_wheel):
         return "py3", "none", platform
 
 
+class BinaryDistribution(Distribution):
+    def has_ext_modules(self) -> bool:
+        return True
+
+
 setup(
+    distclass=BinaryDistribution,
     packages=find_packages(),
     package_data={"armorer_guard": ["bin/armorer-guard", "bin/armorer-guard.exe"]},
     cmdclass={"build_py": build_py, "bdist_wheel": bdist_wheel},
