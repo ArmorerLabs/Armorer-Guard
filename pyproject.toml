@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "armorer-guard"
+version = "0.1.0"
+description = "Binary scanner package for Armorer Guard"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "LicenseRef-Proprietary"
+authors = [{ name = "Secure Neural" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "Topic :: Security",
+]
+
+[project.urls]
+Homepage = "https://github.com/SecureNeural/Armorer"
+Repository = "https://github.com/SecureNeural/Armorer-Guard"
+
+[project.scripts]
+armorer-guard-python = "armorer_guard.cli:main"
