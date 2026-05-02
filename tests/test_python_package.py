@@ -14,3 +14,15 @@ def test_detect_credentials() -> None:
     assert result is not None
     assert result.credential_type == "notion"
     assert result.suggested_key_name == "NOTION_API_KEY"
+
+
+def test_capabilities_are_rust_owned() -> None:
+    capabilities = armorer_guard.capabilities()
+    assert capabilities["implementation_language"] == "rust"
+    assert capabilities["boundaries"]["python_detection_logic"].startswith("none")
+    assert {lane["id"] for lane in capabilities["lanes"]} >= {
+        "credential_lane",
+        "semantic_lane",
+        "similarity_lane",
+        "policy_lane",
+    }

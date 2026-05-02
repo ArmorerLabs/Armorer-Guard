@@ -4,14 +4,22 @@ import argparse
 import json
 import sys
 
-from . import detect_credentials, inspect_input, sanitize_text
+from . import capabilities, detect_credentials, inspect_input, sanitize_text
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run Armorer Guard from Python package")
-    parser.add_argument("mode", nargs="?", choices=["inspect", "sanitize", "detect-credentials"], default="inspect")
+    parser.add_argument(
+        "mode",
+        nargs="?",
+        choices=["inspect", "sanitize", "detect-credentials", "capabilities"],
+        default="inspect",
+    )
     args = parser.parse_args()
     text = sys.stdin.read()
+    if args.mode == "capabilities":
+        print(json.dumps(capabilities()))
+        return 0
     if args.mode == "sanitize":
         print(sanitize_text(text))
         return 0

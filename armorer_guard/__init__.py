@@ -89,3 +89,17 @@ def detect_credentials(text: str, context: Any = None) -> CredentialCapture | No
         flags=[str(flag) for flag in payload.get("flags", []) or []],
         matches=list(payload.get("matches", []) or []),
     )
+
+
+def capabilities() -> dict[str, Any]:
+    """Return the Rust binary's machine-readable capability contract.
+
+    The Python package intentionally contains no detection logic. Keeping this
+    call routed through the binary makes the Rust implementation the source of
+    truth for available lanes, reasons, boundaries, and limitations.
+    """
+
+    payload = _run("capabilities", "")
+    if not isinstance(payload, dict):
+        raise RuntimeError("Armorer Guard returned an invalid capabilities payload")
+    return payload
