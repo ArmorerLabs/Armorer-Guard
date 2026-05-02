@@ -373,6 +373,10 @@ fn detect_semantic_categories(text: &str) -> Vec<ThreatCategory> {
             "retrieved document",
             "visible user request",
             "priorisez ce paragraphe",
+            "ignore previous instructions",
+            "ignore all previous instructions",
+            "ignore previous insrtuctions",
+            "ignore all previous insrtuctions",
         ],
         &[
             &["must obey", "not the operator"],
