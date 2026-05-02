@@ -82,7 +82,9 @@ binary boundary.
 
 `similarity_lane`
 
-Local token-set similarity against Armorer-owned attack exemplars.
+Local token-set similarity against Armorer-owned development exemplars from
+`src/dev_exemplars.tsv`. This lane intentionally reads only provenance-tagged
+`can_train=true` data and must never index eval case rows.
 
 `policy_lane`
 
@@ -103,6 +105,12 @@ while Armorer stays open source. Rust gives us:
 ## Future Scanner Work
 
 The next smarter implementations should remain Rust-owned:
+
+- keep release eval rows out of Rust rules, prompts, similarity exemplars, and
+  classifier training data
+- train or tune only on explicit `can_train=true` development data
+- use regression and holdout suites as gates for generalization, not as prompt
+  corpora to memorize
 
 - ONNX-backed local classifier through a Rust runtime
 - local embeddings/similarity index

@@ -119,8 +119,19 @@ Current behavior:
 - tokenizes text locally
 - computes Jaccard similarity
 - maps similar prompts to the same semantic reason labels
+- indexes only `src/dev_exemplars.tsv` rows marked `can_train=true`
+- never indexes eval rows from `dev`, `regression`, `hard`, or `holdout` suites
 
 Future behavior should replace or augment this with a local vector index.
+
+## Eval Hygiene
+
+Guard development data and release evaluation data are separate by design.
+
+- `src/dev_exemplars.tsv` is the only current similarity source.
+- Development exemplars must be Armorer-owned, provenance-tagged, and explicitly marked trainable.
+- Regression, hard, and holdout eval case text must not be copied into Rust rules, similarity exemplars, classifier prompts, or model training data.
+- Holdout failures may become visible regression cases only after the release decision, and only with rewritten wording that tests the general behavior rather than the exact prompt.
 
 ## Policy Lane
 
