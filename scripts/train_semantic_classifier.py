@@ -8,7 +8,7 @@ from time import perf_counter
 import joblib
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import SGDClassifier
+from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.metrics import classification_report, f1_score, precision_score, recall_score
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
@@ -40,34 +40,53 @@ def split_rows(rows: list[dict]) -> tuple[list[dict], list[dict]]:
     return train, validation
 
 
-def fit_model(train: list[dict]) -> tuple[Pipeline, MultiLabelBinarizer]:
+def fit_model(
+    train: list[dict],
+    *,
+    analyzer: str,
+    ngram_min: int,
+    ngram_max: int,
+    max_features: int,
+    model_kind: str,
+    strip_accents: str | None,
+) -> tuple[Pipeline, MultiLabelBinarizer]:
     mlb = MultiLabelBinarizer(classes=LABELS)
     y = mlb.fit_transform([row.get("labels", []) for row in train])
+    if model_kind == "logreg":
+        estimator = LogisticRegression(
+            C=4.0,
+            class_weight="balanced",
+            max_iter=500,
+            solver="liblinear",
+        )
+    elif model_kind == "sgd":
+        estimator = SGDClassifier(
+            loss="log_loss",
+            alpha=0.00002,
+            class_weight="balanced",
+            max_iter=80,
+            random_state=2488,
+            tol=1e-4,
+        )
+    else:
+        raise SystemExit(f"unsupported model kind: {model_kind}")
+
     model = Pipeline(
         [
             (
                 "tfidf",
                 TfidfVectorizer(
-                    analyzer="char_wb",
-                    ngram_range=(3, 4),
+                    analyzer=analyzer,
+                    ngram_range=(ngram_min, ngram_max),
                     min_df=2,
                     lowercase=True,
-                    strip_accents="unicode",
-                    max_features=30_000,
+                    strip_accents=strip_accents,
+                    max_features=max_features,
                 ),
             ),
             (
                 "classifier",
-                OneVsRestClassifier(
-                    SGDClassifier(
-                        loss="log_loss",
-                        alpha=0.00002,
-                        class_weight="balanced",
-                        max_iter=80,
-                        random_state=2488,
-                        tol=1e-4,
-                    )
-                ),
+                OneVsRestClassifier(estimator),
             ),
         ]
     )
@@ -124,13 +143,17 @@ def export_onnx(model: Pipeline, out_path: Path) -> bool:
     except Exception as exc:
         print(f"skipping ONNX export: {exc}")
         return False
-    onx = to_onnx(
-        model,
-        initial_types=[("text", StringTensorType([None, 1]))],
-        target_opset=15,
-    )
-    out_path.write_bytes(onx.SerializeToString())
-    return True
+    try:
+        onx = to_onnx(
+            model,
+            initial_types=[("text", StringTensorType([None, 1]))],
+            target_opset=15,
+        )
+        out_path.write_bytes(onx.SerializeToString())
+        return True
+    except Exception as exc:
+        print(f"skipping ONNX export: {exc}")
+        return False
 
 
 def main() -> None:
@@ -138,6 +161,12 @@ def main() -> None:
     parser.add_argument("--data", type=Path, default=DEFAULT_DATA)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--threshold", type=float, default=0.42)
+    parser.add_argument("--analyzer", choices=["word", "char_wb"], default="char_wb")
+    parser.add_argument("--ngram-min", type=int, default=3)
+    parser.add_argument("--ngram-max", type=int, default=4)
+    parser.add_argument("--max-features", type=int, default=30_000)
+    parser.add_argument("--model-kind", choices=["sgd", "logreg"], default="sgd")
+    parser.add_argument("--strip-accents", choices=["none", "unicode"], default="unicode")
     args = parser.parse_args()
 
     rows = load_rows(args.data)
@@ -146,8 +175,24 @@ def main() -> None:
         raise SystemExit(f"found non-trainable rows in training data: {forbidden[:5]}")
 
     train, validation = split_rows(rows)
-    model, mlb = fit_model(train)
+    model, mlb = fit_model(
+        train,
+        analyzer=args.analyzer,
+        ngram_min=args.ngram_min,
+        ngram_max=args.ngram_max,
+        max_features=args.max_features,
+        model_kind=args.model_kind,
+        strip_accents=None if args.strip_accents == "none" else args.strip_accents,
+    )
     metrics = evaluate(model, mlb, validation, args.threshold)
+    metrics["training_config"] = {
+        "analyzer": args.analyzer,
+        "ngram_min": args.ngram_min,
+        "ngram_max": args.ngram_max,
+        "max_features": args.max_features,
+        "model_kind": args.model_kind,
+        "strip_accents": args.strip_accents,
+    }
 
     args.out.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": model, "labels": list(mlb.classes_), "threshold": args.threshold}, args.out / "semantic_classifier.joblib")

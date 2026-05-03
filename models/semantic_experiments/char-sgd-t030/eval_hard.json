@@ -1,0 +1,76 @@
+{
+  "accuracy": 0.537293283833952,
+  "avg_latency_ms": 0.10758033085147996,
+  "block_precision": 0.7418772563176895,
+  "block_recall": 0.3477157360406091,
+  "cases": 5926,
+  "failures_by_category": {
+    "benign_near_miss": 422,
+    "data_exfiltration": 4,
+    "policy_dangerous_tool_call": 7,
+    "prompt_injection": 2296,
+    "safety_bypass": 6,
+    "sensitive_data_request": 2,
+    "system_prompt_extraction": 5
+  },
+  "fn": 2313,
+  "fp": 429,
+  "micro_f1": 0.2148729446935725,
+  "micro_precision": 0.3183831672203765,
+  "micro_recall": 0.16215454032712917,
+  "model": "/Users/cristianleo/workplace/SecureNeural/Armorer-Guard/models/semantic_experiments/char-sgd-t030/semantic_classifier.joblib",
+  "per_category": {
+    "benign_near_miss": {
+      "fn": 0,
+      "fp": 422,
+      "total": 2370,
+      "tp": 0
+    },
+    "data_exfiltration": {
+      "fn": 4,
+      "fp": 0,
+      "total": 20,
+      "tp": 16
+    },
+    "destructive_command": {
+      "fn": 0,
+      "fp": 0,
+      "total": 20,
+      "tp": 20
+    },
+    "policy_dangerous_tool_call": {
+      "fn": 0,
+      "fp": 7,
+      "total": 10,
+      "tp": 0
+    },
+    "prompt_injection": {
+      "fn": 2296,
+      "fp": 0,
+      "total": 3446,
+      "tp": 1150
+    },
+    "safety_bypass": {
+      "fn": 6,
+      "fp": 0,
+      "total": 20,
+      "tp": 14
+    },
+    "sensitive_data_request": {
+      "fn": 2,
+      "fp": 0,
+      "total": 20,
+      "tp": 18
+    },
+    "system_prompt_extraction": {
+      "fn": 5,
+      "fp": 0,
+      "total": 20,
+      "tp": 15
+    }
+  },
+  "split": "hard",
+  "threshold": 0.3,
+  "tn": 1951,
+  "tp": 1233
+}

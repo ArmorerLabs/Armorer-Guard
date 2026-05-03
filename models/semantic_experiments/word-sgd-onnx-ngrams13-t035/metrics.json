@@ -1,0 +1,182 @@
+{
+  "avg_latency_ms": 0.03339828695115365,
+  "classification_report": {
+    "data_exfiltration": {
+      "f1-score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 167.0
+    },
+    "destructive_command": {
+      "f1-score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 172.0
+    },
+    "macro avg": {
+      "f1-score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 1023.0
+    },
+    "micro avg": {
+      "f1-score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 1023.0
+    },
+    "prompt_injection": {
+      "f1-score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 171.0
+    },
+    "safety_bypass": {
+      "f1-score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 172.0
+    },
+    "samples avg": {
+      "f1-score": 0.808695652173913,
+      "precision": 0.808695652173913,
+      "recall": 0.808695652173913,
+      "support": 1023.0
+    },
+    "sensitive_data_request": {
+      "f1-score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 171.0
+    },
+    "system_prompt_extraction": {
+      "f1-score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 170.0
+    },
+    "weighted avg": {
+      "f1-score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 1023.0
+    }
+  },
+  "exact_match": 1.0,
+  "macro_f1": 1.0,
+  "micro_f1": 1.0,
+  "micro_precision": 1.0,
+  "micro_recall": 1.0,
+  "sample_predictions": [
+    {
+      "id": "synthetic_benign_02d5e7994a1e8423",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_03f7e8c634db3c45",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_086cc0f02e0d62cd",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_08d9b4f8275748df",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_09ece19f7d54aa6e",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0a545d078d05e12c",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0a5742a108dbe029",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0a870c303f3cb5f7",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0bc2f9f0115c2570",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0c3eb396c588c5b9",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0d880cf18e4e9a86",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0d8ade05610cd109",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0e69447442635369",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0ec16e63a08da10f",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_10dfb141f48b6f4d",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_138b66299df2d6b1",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_13b5cc3feb91cd01",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_1405476deeb38804",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_1445780dde9459e5",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_14cb35d7d7a41ef5",
+      "predicted": [],
+      "truth": []
+    }
+  ],
+  "threshold": 0.35,
+  "training_config": {
+    "analyzer": "word",
+    "max_features": 80000,
+    "model_kind": "sgd",
+    "ngram_max": 3,
+    "ngram_min": 1,
+    "strip_accents": "none"
+  },
+  "validation_rows": 1265
+}
