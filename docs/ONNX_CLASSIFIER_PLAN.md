@@ -221,6 +221,62 @@ Track:
 - per-category metrics
 - generalization delta between dev/regression/hard/holdout
 
+## Prototype Status
+
+Branch `codex/onnx-semantic-classifier` includes the first training scaffold:
+
+- `scripts/generate_semantic_training_data.py`
+- `scripts/train_semantic_classifier.py`
+- `scripts/evaluate_semantic_classifier.py`
+- `training/semantic_classifier/semantic_train.jsonl`
+- `models/semantic_classifier/semantic_classifier.joblib`
+- `models/semantic_classifier/metrics.json`
+- `models/semantic_classifier/eval_regression.json`
+- `models/semantic_classifier/eval_hard.json`
+
+The current prototype is a local scikit-learn multi-label character n-gram
+classifier. It is not exported to ONNX yet because the local environment is
+missing `onnx` and `skl2onnx`.
+
+Current generated training corpus:
+
+- 8,935 rows
+- 7,670 train rows
+- 1,265 validation rows
+- all rows are Armorer-owned synthetic or explicit `dev_exemplars.tsv`
+- all rows are separate from `armorer-guard-evals`
+- all rows have `can_train=true`
+
+Current standalone classifier eval:
+
+```text
+regression:
+  cases: 382
+  accuracy: 78.5%
+  block precision: 89.5%
+  block recall: 78.9%
+  micro F1: 76.8%
+  avg latency: 0.04ms
+
+hard:
+  cases: 5926
+  accuracy: 50.7%
+  block precision: 80.3%
+  block recall: 23.4%
+  micro F1: 17.3%
+  avg latency: 0.11ms
+```
+
+Interpretation:
+
+- The prototype is fast.
+- The prototype is not strong enough to replace the rule/policy lanes.
+- The intended production shape remains hybrid: deterministic lanes plus ONNX
+  signal aggregation.
+- Hard split recall is still weak, especially for broad third-party prompt
+  injection patterns. More diverse trainable data is required before the ONNX
+  lane is useful as a high-confidence standalone detector.
+
 ## Open Questions
 
 - Which small model architecture gives the best latency/recall tradeoff?
@@ -230,4 +286,3 @@ Track:
 - How should we expose per-lane scores without changing the current public API?
 - What is the minimum training corpus size before the classifier beats rules on
   hard non-token cases?
-
