@@ -37,6 +37,7 @@ See:
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Capabilities](docs/CAPABILITIES.md)
+- [ONNX classifier plan](docs/ONNX_CLASSIFIER_PLAN.md)
 - [Distribution](docs/DISTRIBUTION.md)
 
 ## Development
