@@ -2,31 +2,31 @@
   "description": "ONNX-exportable word 1-2gram SGD baseline.",
   "evals": {
     "hard": {
-      "accuracy": 0.4730003374957813,
-      "avg_latency_ms": 0.021029151209173997,
-      "block_precision": 0.8161434977578476,
-      "block_recall": 0.15397631133671744,
+      "accuracy": 0.5669929125885926,
+      "avg_latency_ms": 0.021212819147725544,
+      "block_precision": 0.9260869565217391,
+      "block_recall": 0.3003384094754653,
       "cases": 5926,
       "failures_by_category": {
-        "benign_near_miss": 120,
+        "benign_near_miss": 83,
         "data_exfiltration": 11,
-        "destructive_command": 3,
-        "policy_dangerous_tool_call": 3,
-        "prompt_injection": 2953,
-        "safety_bypass": 14,
-        "sensitive_data_request": 14,
-        "system_prompt_extraction": 5
+        "destructive_command": 6,
+        "policy_dangerous_tool_call": 2,
+        "prompt_injection": 2429,
+        "safety_bypass": 11,
+        "sensitive_data_request": 18,
+        "system_prompt_extraction": 6
       },
-      "fn": 3000,
-      "fp": 123,
-      "micro_f1": 0.16413662239089183,
-      "micro_precision": 0.5164179104477612,
-      "micro_recall": 0.09757473209249859,
+      "fn": 2481,
+      "fp": 85,
+      "micro_f1": 0.4211869814932993,
+      "micro_precision": 0.8571428571428571,
+      "micro_recall": 0.27918781725888325,
       "model": "/Users/cristianleo/workplace/SecureNeural/Armorer-Guard/models/semantic_experiments/word-sgd-onnx-t042/semantic_classifier.joblib",
       "per_category": {
         "benign_near_miss": {
           "fn": 0,
-          "fp": 120,
+          "fp": 83,
           "total": 2370,
           "tp": 0
         },
@@ -37,68 +37,68 @@
           "tp": 9
         },
         "destructive_command": {
-          "fn": 3,
+          "fn": 6,
           "fp": 0,
           "total": 20,
-          "tp": 17
+          "tp": 14
         },
         "policy_dangerous_tool_call": {
           "fn": 0,
-          "fp": 3,
+          "fp": 2,
           "total": 10,
           "tp": 0
         },
         "prompt_injection": {
-          "fn": 2953,
+          "fn": 2429,
           "fp": 0,
           "total": 3446,
-          "tp": 493
+          "tp": 1017
         },
         "safety_bypass": {
-          "fn": 14,
+          "fn": 11,
           "fp": 0,
           "total": 20,
-          "tp": 6
+          "tp": 9
         },
         "sensitive_data_request": {
-          "fn": 14,
+          "fn": 18,
           "fp": 0,
           "total": 20,
-          "tp": 6
+          "tp": 2
         },
         "system_prompt_extraction": {
-          "fn": 5,
+          "fn": 6,
           "fp": 0,
           "total": 20,
-          "tp": 15
+          "tp": 14
         }
       },
       "split": "hard",
       "threshold": 0.42,
-      "tn": 2257,
-      "tp": 546
+      "tn": 2295,
+      "tp": 1065
     },
     "regression": {
-      "accuracy": 0.7146596858638743,
-      "avg_latency_ms": 0.011680845210221426,
-      "block_precision": 0.8642533936651584,
-      "block_recall": 0.7074074074074074,
+      "accuracy": 0.7303664921465969,
+      "avg_latency_ms": 0.012258834483501799,
+      "block_precision": 0.8678414096916299,
+      "block_recall": 0.7296296296296296,
       "cases": 382,
       "failures_by_category": {
         "benign": 6,
         "credential_capture": 24,
-        "data_exfiltration": 23,
-        "destructive_command": 9,
-        "prompt_injection": 12,
+        "data_exfiltration": 9,
+        "destructive_command": 13,
+        "prompt_injection": 8,
         "safety_bypass": 9,
-        "sensitive_data_request": 18,
-        "system_prompt_extraction": 8
+        "sensitive_data_request": 22,
+        "system_prompt_extraction": 12
       },
-      "fn": 79,
+      "fn": 73,
       "fp": 30,
-      "micro_f1": 0.7576374745417516,
-      "micro_precision": 0.8416289592760181,
-      "micro_recall": 0.6888888888888889,
+      "micro_f1": 0.7404426559356136,
+      "micro_precision": 0.8105726872246696,
+      "micro_recall": 0.6814814814814815,
       "model": "/Users/cristianleo/workplace/SecureNeural/Armorer-Guard/models/semantic_experiments/word-sgd-onnx-t042/semantic_classifier.joblib",
       "per_category": {
         "benign": {
@@ -120,22 +120,22 @@
           "tp": 0
         },
         "data_exfiltration": {
-          "fn": 23,
-          "fp": 0,
-          "total": 45,
-          "tp": 22
-        },
-        "destructive_command": {
           "fn": 9,
           "fp": 0,
           "total": 45,
           "tp": 36
         },
-        "prompt_injection": {
-          "fn": 12,
+        "destructive_command": {
+          "fn": 13,
           "fp": 0,
           "total": 45,
-          "tp": 33
+          "tp": 32
+        },
+        "prompt_injection": {
+          "fn": 8,
+          "fp": 0,
+          "total": 45,
+          "tp": 37
         },
         "safety_bypass": {
           "fn": 9,
@@ -144,69 +144,69 @@
           "tp": 36
         },
         "sensitive_data_request": {
-          "fn": 18,
+          "fn": 22,
           "fp": 0,
           "total": 45,
-          "tp": 27
+          "tp": 23
         },
         "system_prompt_extraction": {
-          "fn": 8,
+          "fn": 12,
           "fp": 0,
           "total": 45,
-          "tp": 37
+          "tp": 33
         }
       },
       "split": "regression",
       "threshold": 0.42,
       "tn": 82,
-      "tp": 191
+      "tp": 197
     }
   },
   "name": "word-sgd-onnx-t042",
   "train": {
-    "avg_latency_ms": 0.022527141489176884,
+    "avg_latency_ms": 0.0244355951927597,
     "classification_report": {
       "data_exfiltration": {
-        "f1-score": 1.0,
-        "precision": 1.0,
+        "f1-score": 0.9814323607427056,
+        "precision": 0.9635416666666666,
         "recall": 1.0,
-        "support": 167.0
+        "support": 185.0
       },
       "destructive_command": {
-        "f1-score": 1.0,
-        "precision": 1.0,
+        "f1-score": 0.9861495844875346,
+        "precision": 0.9726775956284153,
         "recall": 1.0,
-        "support": 172.0
+        "support": 178.0
       },
       "macro avg": {
-        "f1-score": 1.0,
-        "precision": 1.0,
+        "f1-score": 0.9844891597142903,
+        "precision": 0.9699176894355577,
         "recall": 1.0,
-        "support": 1023.0
+        "support": 1087.0
       },
       "micro avg": {
-        "f1-score": 1.0,
-        "precision": 1.0,
+        "f1-score": 0.9832654907281773,
+        "precision": 0.9670818505338078,
         "recall": 1.0,
-        "support": 1023.0
+        "support": 1087.0
       },
       "prompt_injection": {
-        "f1-score": 1.0,
-        "precision": 1.0,
+        "f1-score": 0.9530516431924883,
+        "precision": 0.9103139013452914,
         "recall": 1.0,
-        "support": 171.0
+        "support": 203.0
       },
       "safety_bypass": {
-        "f1-score": 1.0,
-        "precision": 1.0,
+        "f1-score": 0.9863013698630136,
+        "precision": 0.972972972972973,
         "recall": 1.0,
-        "support": 172.0
+        "support": 180.0
       },
       "samples avg": {
-        "f1-score": 0.808695652173913,
-        "precision": 0.808695652173913,
-        "recall": 0.808695652173913,
-        "support": 1023.0
+        "f1-score": 0.7703756201275691,
+        "precision": 0.7703756201275691,
+        "recall": 0.7703756201275691,
+        "support": 1087.0
       },
       "sensitive_data_request": {
         "f1-score": 1.0,
@@ -221,101 +221,117 @@
         "support": 170.0
       },
       "weighted avg": {
-        "f1-score": 1.0,
-        "precision": 1.0,
+        "f1-score": 0.983535734056669,
+        "precision": 0.9680962994143705,
         "recall": 1.0,
-        "support": 1023.0
+        "support": 1087.0
       }
     },
-    "exact_match": 1.0,
-    "macro_f1": 1.0,
-    "micro_f1": 1.0,
-    "micro_precision": 1.0,
+    "exact_match": 0.9737774627923459,
+    "macro_f1": 0.9844891597142903,
+    "micro_f1": 0.9832654907281773,
+    "micro_precision": 0.9670818505338078,
     "micro_recall": 1.0,
     "onnx_exported": true,
     "sample_predictions": [
       {
-        "id": "synthetic_benign_02d5e7994a1e8423",
+        "id": "synthetic_benign_009c768bb9c8d9e2",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_03f7e8c634db3c45",
+        "id": "synthetic_benign_00d9836539f85f70",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_086cc0f02e0d62cd",
+        "id": "synthetic_benign_01e0deb1713c06c9",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_08d9b4f8275748df",
+        "id": "synthetic_benign_03539ed1f36c89ad",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_09ece19f7d54aa6e",
+        "id": "synthetic_benign_04f79ac93c8749ae",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0a545d078d05e12c",
+        "id": "synthetic_benign_057dcfed21067625",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0a5742a108dbe029",
+        "id": "synthetic_benign_058e95f555c6f7a0",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0a870c303f3cb5f7",
+        "id": "synthetic_benign_06e1479e0d2bdb63",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0bc2f9f0115c2570",
+        "id": "synthetic_benign_085c96995a36a765",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0c3eb396c588c5b9",
+        "id": "synthetic_benign_091d87e04cb3be8f",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0d880cf18e4e9a86",
+        "id": "synthetic_benign_0a095dda7889d8be",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0d8ade05610cd109",
+        "id": "synthetic_benign_0af5709731f8955e",
+        "predicted": [
+          "prompt_injection"
+        ],
+        "truth": []
+      },
+      {
+        "id": "synthetic_benign_0b5b89913dee5d68",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0e69447442635369",
+        "id": "synthetic_benign_0bef80e220d18b42",
+        "predicted": [
+          "prompt_injection"
+        ],
+        "truth": []
+      },
+      {
+        "id": "synthetic_benign_0e0f1a7c785e1327",
+        "predicted": [
+          "prompt_injection"
+        ],
+        "truth": []
+      },
+      {
+        "id": "synthetic_benign_0f06bd0d0580f743",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0ec16e63a08da10f",
+        "id": "synthetic_benign_1306c830822222ab",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_10dfb141f48b6f4d",
+        "id": "synthetic_benign_13c80c670bf124a7",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_138b66299df2d6b1",
-        "predicted": [],
-        "truth": []
-      },
-      {
-        "id": "synthetic_benign_13b5cc3feb91cd01",
+        "id": "synthetic_benign_13ed1a84fb9e355a",
         "predicted": [],
         "truth": []
       },
@@ -323,20 +339,10 @@
         "id": "synthetic_benign_1405476deeb38804",
         "predicted": [],
         "truth": []
-      },
-      {
-        "id": "synthetic_benign_1445780dde9459e5",
-        "predicted": [],
-        "truth": []
-      },
-      {
-        "id": "synthetic_benign_14cb35d7d7a41ef5",
-        "predicted": [],
-        "truth": []
       }
     ],
     "threshold": 0.42,
-    "train_rows": 7670,
+    "train_rows": 8377,
     "training_config": {
       "analyzer": "word",
       "max_features": 50000,
@@ -345,6 +351,6 @@
       "ngram_min": 1,
       "strip_accents": "none"
     },
-    "validation_rows": 1265
+    "validation_rows": 1411
   }
 }

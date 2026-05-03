@@ -1,29 +1,29 @@
 {
-  "accuracy": 0.4730003374957813,
-  "avg_latency_ms": 0.021029151209173997,
-  "block_precision": 0.8161434977578476,
-  "block_recall": 0.15397631133671744,
+  "accuracy": 0.5669929125885926,
+  "avg_latency_ms": 0.021212819147725544,
+  "block_precision": 0.9260869565217391,
+  "block_recall": 0.3003384094754653,
   "cases": 5926,
   "failures_by_category": {
-    "benign_near_miss": 120,
+    "benign_near_miss": 83,
     "data_exfiltration": 11,
-    "destructive_command": 3,
-    "policy_dangerous_tool_call": 3,
-    "prompt_injection": 2953,
-    "safety_bypass": 14,
-    "sensitive_data_request": 14,
-    "system_prompt_extraction": 5
+    "destructive_command": 6,
+    "policy_dangerous_tool_call": 2,
+    "prompt_injection": 2429,
+    "safety_bypass": 11,
+    "sensitive_data_request": 18,
+    "system_prompt_extraction": 6
   },
-  "fn": 3000,
-  "fp": 123,
-  "micro_f1": 0.16413662239089183,
-  "micro_precision": 0.5164179104477612,
-  "micro_recall": 0.09757473209249859,
+  "fn": 2481,
+  "fp": 85,
+  "micro_f1": 0.4211869814932993,
+  "micro_precision": 0.8571428571428571,
+  "micro_recall": 0.27918781725888325,
   "model": "/Users/cristianleo/workplace/SecureNeural/Armorer-Guard/models/semantic_experiments/word-sgd-onnx-t042/semantic_classifier.joblib",
   "per_category": {
     "benign_near_miss": {
       "fn": 0,
-      "fp": 120,
+      "fp": 83,
       "total": 2370,
       "tp": 0
     },
@@ -34,44 +34,44 @@
       "tp": 9
     },
     "destructive_command": {
-      "fn": 3,
+      "fn": 6,
       "fp": 0,
       "total": 20,
-      "tp": 17
+      "tp": 14
     },
     "policy_dangerous_tool_call": {
       "fn": 0,
-      "fp": 3,
+      "fp": 2,
       "total": 10,
       "tp": 0
     },
     "prompt_injection": {
-      "fn": 2953,
+      "fn": 2429,
       "fp": 0,
       "total": 3446,
-      "tp": 493
+      "tp": 1017
     },
     "safety_bypass": {
-      "fn": 14,
+      "fn": 11,
       "fp": 0,
       "total": 20,
-      "tp": 6
+      "tp": 9
     },
     "sensitive_data_request": {
-      "fn": 14,
+      "fn": 18,
       "fp": 0,
       "total": 20,
-      "tp": 6
+      "tp": 2
     },
     "system_prompt_extraction": {
-      "fn": 5,
+      "fn": 6,
       "fp": 0,
       "total": 20,
-      "tp": 15
+      "tp": 14
     }
   },
   "split": "hard",
   "threshold": 0.42,
-  "tn": 2257,
-  "tp": 546
+  "tn": 2295,
+  "tp": 1065
 }

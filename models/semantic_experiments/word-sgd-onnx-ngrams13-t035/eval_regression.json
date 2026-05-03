@@ -1,23 +1,24 @@
 {
-  "accuracy": 0.7460732984293194,
-  "avg_latency_ms": 0.015482656335877499,
-  "block_precision": 0.9675675675675676,
-  "block_recall": 0.662962962962963,
+  "accuracy": 0.7094240837696335,
+  "avg_latency_ms": 0.018221639457563454,
+  "block_precision": 0.863013698630137,
+  "block_recall": 0.7,
   "cases": 382,
   "failures_by_category": {
     "benign": 6,
-    "data_exfiltration": 27,
+    "credential_capture": 24,
+    "data_exfiltration": 9,
     "destructive_command": 13,
-    "prompt_injection": 12,
-    "safety_bypass": 13,
-    "sensitive_data_request": 18,
-    "system_prompt_extraction": 8
+    "prompt_injection": 8,
+    "safety_bypass": 9,
+    "sensitive_data_request": 26,
+    "system_prompt_extraction": 16
   },
-  "fn": 91,
-  "fp": 6,
-  "micro_f1": 0.7648351648351648,
-  "micro_precision": 0.9405405405405406,
-  "micro_recall": 0.6444444444444445,
+  "fn": 81,
+  "fp": 30,
+  "micro_f1": 0.7361963190184049,
+  "micro_precision": 0.821917808219178,
+  "micro_recall": 0.6666666666666666,
   "model": "/Users/cristianleo/workplace/SecureNeural/Armorer-Guard/models/semantic_experiments/word-sgd-onnx-ngrams13-t035/semantic_classifier.joblib",
   "per_category": {
     "benign": {
@@ -34,15 +35,15 @@
     },
     "credential_capture": {
       "fn": 0,
-      "fp": 0,
+      "fp": 24,
       "total": 72,
       "tp": 0
     },
     "data_exfiltration": {
-      "fn": 27,
+      "fn": 9,
       "fp": 0,
       "total": 45,
-      "tp": 18
+      "tp": 36
     },
     "destructive_command": {
       "fn": 13,
@@ -51,32 +52,32 @@
       "tp": 32
     },
     "prompt_injection": {
-      "fn": 12,
-      "fp": 0,
-      "total": 45,
-      "tp": 33
-    },
-    "safety_bypass": {
-      "fn": 13,
-      "fp": 0,
-      "total": 45,
-      "tp": 32
-    },
-    "sensitive_data_request": {
-      "fn": 18,
-      "fp": 0,
-      "total": 45,
-      "tp": 27
-    },
-    "system_prompt_extraction": {
       "fn": 8,
       "fp": 0,
       "total": 45,
       "tp": 37
+    },
+    "safety_bypass": {
+      "fn": 9,
+      "fp": 0,
+      "total": 45,
+      "tp": 36
+    },
+    "sensitive_data_request": {
+      "fn": 26,
+      "fp": 0,
+      "total": 45,
+      "tp": 19
+    },
+    "system_prompt_extraction": {
+      "fn": 16,
+      "fp": 0,
+      "total": 45,
+      "tp": 29
     }
   },
   "split": "regression",
   "threshold": 0.35,
-  "tn": 106,
-  "tp": 179
+  "tn": 82,
+  "tp": 189
 }

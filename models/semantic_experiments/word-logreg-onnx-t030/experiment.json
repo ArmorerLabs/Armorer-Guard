@@ -2,39 +2,39 @@
   "description": "Logistic regression comparison model with ONNX-exportable word features.",
   "evals": {
     "hard": {
-      "accuracy": 0.45140060749240635,
-      "avg_latency_ms": 0.02086829933785141,
-      "block_precision": 0.8933333333333333,
-      "block_recall": 0.09447264523406655,
+      "accuracy": 0.5904488693891327,
+      "avg_latency_ms": 0.021939897699796426,
+      "block_precision": 0.9293937068303914,
+      "block_recall": 0.3415115623237451,
       "cases": 5926,
       "failures_by_category": {
-        "benign_near_miss": 39,
-        "data_exfiltration": 13,
+        "benign_near_miss": 90,
+        "data_exfiltration": 10,
         "destructive_command": 6,
-        "policy_dangerous_tool_call": 1,
-        "prompt_injection": 3155,
-        "safety_bypass": 15,
-        "sensitive_data_request": 16,
-        "system_prompt_extraction": 6
+        "policy_dangerous_tool_call": 2,
+        "prompt_injection": 2281,
+        "safety_bypass": 12,
+        "sensitive_data_request": 18,
+        "system_prompt_extraction": 8
       },
-      "fn": 3211,
-      "fp": 40,
-      "micro_f1": 0.11374649324152002,
-      "micro_precision": 0.5946666666666667,
-      "micro_recall": 0.062887760857304,
+      "fn": 2335,
+      "fp": 92,
+      "micro_f1": 0.4764063465897383,
+      "micro_precision": 0.8844682478959449,
+      "micro_recall": 0.3260011280315849,
       "model": "/Users/cristianleo/workplace/SecureNeural/Armorer-Guard/models/semantic_experiments/word-logreg-onnx-t030/semantic_classifier.joblib",
       "per_category": {
         "benign_near_miss": {
           "fn": 0,
-          "fp": 39,
+          "fp": 90,
           "total": 2370,
           "tp": 0
         },
         "data_exfiltration": {
-          "fn": 13,
+          "fn": 10,
           "fp": 0,
           "total": 20,
-          "tp": 7
+          "tp": 10
         },
         "destructive_command": {
           "fn": 6,
@@ -44,60 +44,61 @@
         },
         "policy_dangerous_tool_call": {
           "fn": 0,
-          "fp": 1,
+          "fp": 2,
           "total": 10,
           "tp": 0
         },
         "prompt_injection": {
-          "fn": 3155,
+          "fn": 2281,
           "fp": 0,
           "total": 3446,
-          "tp": 291
+          "tp": 1165
         },
         "safety_bypass": {
-          "fn": 15,
+          "fn": 12,
           "fp": 0,
           "total": 20,
-          "tp": 5
+          "tp": 8
         },
         "sensitive_data_request": {
-          "fn": 16,
+          "fn": 18,
           "fp": 0,
           "total": 20,
-          "tp": 4
+          "tp": 2
         },
         "system_prompt_extraction": {
-          "fn": 6,
+          "fn": 8,
           "fp": 0,
           "total": 20,
-          "tp": 14
+          "tp": 12
         }
       },
       "split": "hard",
       "threshold": 0.3,
-      "tn": 2340,
-      "tp": 335
+      "tn": 2288,
+      "tp": 1211
     },
     "regression": {
-      "accuracy": 0.725130890052356,
-      "avg_latency_ms": 0.010955063333608094,
-      "block_precision": 0.9661016949152542,
-      "block_recall": 0.6333333333333333,
+      "accuracy": 0.7198952879581152,
+      "avg_latency_ms": 0.01199247378914456,
+      "block_precision": 0.8654708520179372,
+      "block_recall": 0.7148148148148148,
       "cases": 382,
       "failures_by_category": {
         "benign": 6,
-        "data_exfiltration": 27,
+        "credential_capture": 24,
+        "data_exfiltration": 9,
         "destructive_command": 13,
-        "prompt_injection": 16,
-        "safety_bypass": 13,
-        "sensitive_data_request": 18,
-        "system_prompt_extraction": 12
+        "prompt_injection": 8,
+        "safety_bypass": 9,
+        "sensitive_data_request": 22,
+        "system_prompt_extraction": 16
       },
-      "fn": 99,
-      "fp": 6,
-      "micro_f1": 0.7427293064876958,
-      "micro_precision": 0.9378531073446328,
-      "micro_recall": 0.6148148148148148,
+      "fn": 77,
+      "fp": 30,
+      "micro_f1": 0.7302231237322515,
+      "micro_precision": 0.8071748878923767,
+      "micro_recall": 0.6666666666666666,
       "model": "/Users/cristianleo/workplace/SecureNeural/Armorer-Guard/models/semantic_experiments/word-logreg-onnx-t030/semantic_classifier.joblib",
       "per_category": {
         "benign": {
@@ -114,15 +115,15 @@
         },
         "credential_capture": {
           "fn": 0,
-          "fp": 0,
+          "fp": 24,
           "total": 72,
           "tp": 0
         },
         "data_exfiltration": {
-          "fn": 27,
+          "fn": 9,
           "fp": 0,
           "total": 45,
-          "tp": 18
+          "tp": 36
         },
         "destructive_command": {
           "fn": 13,
@@ -131,81 +132,81 @@
           "tp": 32
         },
         "prompt_injection": {
+          "fn": 8,
+          "fp": 0,
+          "total": 45,
+          "tp": 37
+        },
+        "safety_bypass": {
+          "fn": 9,
+          "fp": 0,
+          "total": 45,
+          "tp": 36
+        },
+        "sensitive_data_request": {
+          "fn": 22,
+          "fp": 0,
+          "total": 45,
+          "tp": 23
+        },
+        "system_prompt_extraction": {
           "fn": 16,
           "fp": 0,
           "total": 45,
           "tp": 29
-        },
-        "safety_bypass": {
-          "fn": 13,
-          "fp": 0,
-          "total": 45,
-          "tp": 32
-        },
-        "sensitive_data_request": {
-          "fn": 18,
-          "fp": 0,
-          "total": 45,
-          "tp": 27
-        },
-        "system_prompt_extraction": {
-          "fn": 12,
-          "fp": 0,
-          "total": 45,
-          "tp": 33
         }
       },
       "split": "regression",
       "threshold": 0.3,
-      "tn": 106,
-      "tp": 171
+      "tn": 82,
+      "tp": 193
     }
   },
   "name": "word-logreg-onnx-t030",
   "train": {
-    "avg_latency_ms": 0.022828458576452118,
+    "avg_latency_ms": 0.024367321855543692,
     "classification_report": {
       "data_exfiltration": {
-        "f1-score": 1.0,
-        "precision": 1.0,
+        "f1-score": 0.9788359788359788,
+        "precision": 0.9585492227979274,
         "recall": 1.0,
-        "support": 167.0
+        "support": 185.0
       },
       "destructive_command": {
-        "f1-score": 1.0,
-        "precision": 1.0,
+        "f1-score": 0.9861495844875346,
+        "precision": 0.9726775956284153,
         "recall": 1.0,
-        "support": 172.0
+        "support": 178.0
       },
       "macro avg": {
-        "f1-score": 1.0,
-        "precision": 1.0,
+        "f1-score": 0.9840564293965026,
+        "precision": 0.9690856154574345,
         "recall": 1.0,
-        "support": 1023.0
+        "support": 1087.0
       },
       "micro avg": {
-        "f1-score": 1.0,
-        "precision": 1.0,
+        "f1-score": 0.9828209764918626,
+        "precision": 0.9662222222222222,
         "recall": 1.0,
-        "support": 1023.0
+        "support": 1087.0
       },
       "prompt_injection": {
-        "f1-score": 1.0,
-        "precision": 1.0,
+        "f1-score": 0.9530516431924883,
+        "precision": 0.9103139013452914,
         "recall": 1.0,
-        "support": 171.0
+        "support": 203.0
       },
       "safety_bypass": {
-        "f1-score": 1.0,
-        "precision": 1.0,
+        "f1-score": 0.9863013698630136,
+        "precision": 0.972972972972973,
         "recall": 1.0,
-        "support": 172.0
+        "support": 180.0
       },
       "samples avg": {
-        "f1-score": 0.808695652173913,
-        "precision": 0.808695652173913,
-        "recall": 0.808695652173913,
-        "support": 1023.0
+        "f1-score": 0.7703756201275691,
+        "precision": 0.7703756201275691,
+        "recall": 0.7703756201275691,
+        "support": 1087.0
       },
       "sensitive_data_request": {
         "f1-score": 1.0,
@@ -220,101 +221,117 @@
         "support": 170.0
       },
       "weighted avg": {
-        "f1-score": 1.0,
-        "precision": 1.0,
+        "f1-score": 0.9830938475316052,
+        "precision": 0.9672466194551093,
         "recall": 1.0,
-        "support": 1023.0
+        "support": 1087.0
       }
     },
-    "exact_match": 1.0,
-    "macro_f1": 1.0,
-    "micro_f1": 1.0,
-    "micro_precision": 1.0,
+    "exact_match": 0.9730687455705174,
+    "macro_f1": 0.9840564293965026,
+    "micro_f1": 0.9828209764918626,
+    "micro_precision": 0.9662222222222222,
     "micro_recall": 1.0,
     "onnx_exported": true,
     "sample_predictions": [
       {
-        "id": "synthetic_benign_02d5e7994a1e8423",
+        "id": "synthetic_benign_009c768bb9c8d9e2",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_03f7e8c634db3c45",
+        "id": "synthetic_benign_00d9836539f85f70",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_086cc0f02e0d62cd",
+        "id": "synthetic_benign_01e0deb1713c06c9",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_08d9b4f8275748df",
+        "id": "synthetic_benign_03539ed1f36c89ad",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_09ece19f7d54aa6e",
+        "id": "synthetic_benign_04f79ac93c8749ae",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0a545d078d05e12c",
+        "id": "synthetic_benign_057dcfed21067625",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0a5742a108dbe029",
+        "id": "synthetic_benign_058e95f555c6f7a0",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0a870c303f3cb5f7",
+        "id": "synthetic_benign_06e1479e0d2bdb63",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0bc2f9f0115c2570",
+        "id": "synthetic_benign_085c96995a36a765",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0c3eb396c588c5b9",
+        "id": "synthetic_benign_091d87e04cb3be8f",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0d880cf18e4e9a86",
+        "id": "synthetic_benign_0a095dda7889d8be",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0d8ade05610cd109",
+        "id": "synthetic_benign_0af5709731f8955e",
+        "predicted": [
+          "prompt_injection"
+        ],
+        "truth": []
+      },
+      {
+        "id": "synthetic_benign_0b5b89913dee5d68",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0e69447442635369",
+        "id": "synthetic_benign_0bef80e220d18b42",
+        "predicted": [
+          "prompt_injection"
+        ],
+        "truth": []
+      },
+      {
+        "id": "synthetic_benign_0e0f1a7c785e1327",
+        "predicted": [
+          "prompt_injection"
+        ],
+        "truth": []
+      },
+      {
+        "id": "synthetic_benign_0f06bd0d0580f743",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_0ec16e63a08da10f",
+        "id": "synthetic_benign_1306c830822222ab",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_10dfb141f48b6f4d",
+        "id": "synthetic_benign_13c80c670bf124a7",
         "predicted": [],
         "truth": []
       },
       {
-        "id": "synthetic_benign_138b66299df2d6b1",
-        "predicted": [],
-        "truth": []
-      },
-      {
-        "id": "synthetic_benign_13b5cc3feb91cd01",
+        "id": "synthetic_benign_13ed1a84fb9e355a",
         "predicted": [],
         "truth": []
       },
@@ -322,20 +339,10 @@
         "id": "synthetic_benign_1405476deeb38804",
         "predicted": [],
         "truth": []
-      },
-      {
-        "id": "synthetic_benign_1445780dde9459e5",
-        "predicted": [],
-        "truth": []
-      },
-      {
-        "id": "synthetic_benign_14cb35d7d7a41ef5",
-        "predicted": [],
-        "truth": []
       }
     ],
     "threshold": 0.3,
-    "train_rows": 7670,
+    "train_rows": 8377,
     "training_config": {
       "analyzer": "word",
       "max_features": 50000,
@@ -344,6 +351,6 @@
       "ngram_min": 1,
       "strip_accents": "none"
     },
-    "validation_rows": 1265
+    "validation_rows": 1411
   }
 }

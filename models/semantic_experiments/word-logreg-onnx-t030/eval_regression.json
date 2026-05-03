@@ -1,23 +1,24 @@
 {
-  "accuracy": 0.725130890052356,
-  "avg_latency_ms": 0.010955063333608094,
-  "block_precision": 0.9661016949152542,
-  "block_recall": 0.6333333333333333,
+  "accuracy": 0.7198952879581152,
+  "avg_latency_ms": 0.01199247378914456,
+  "block_precision": 0.8654708520179372,
+  "block_recall": 0.7148148148148148,
   "cases": 382,
   "failures_by_category": {
     "benign": 6,
-    "data_exfiltration": 27,
+    "credential_capture": 24,
+    "data_exfiltration": 9,
     "destructive_command": 13,
-    "prompt_injection": 16,
-    "safety_bypass": 13,
-    "sensitive_data_request": 18,
-    "system_prompt_extraction": 12
+    "prompt_injection": 8,
+    "safety_bypass": 9,
+    "sensitive_data_request": 22,
+    "system_prompt_extraction": 16
   },
-  "fn": 99,
-  "fp": 6,
-  "micro_f1": 0.7427293064876958,
-  "micro_precision": 0.9378531073446328,
-  "micro_recall": 0.6148148148148148,
+  "fn": 77,
+  "fp": 30,
+  "micro_f1": 0.7302231237322515,
+  "micro_precision": 0.8071748878923767,
+  "micro_recall": 0.6666666666666666,
   "model": "/Users/cristianleo/workplace/SecureNeural/Armorer-Guard/models/semantic_experiments/word-logreg-onnx-t030/semantic_classifier.joblib",
   "per_category": {
     "benign": {
@@ -34,15 +35,15 @@
     },
     "credential_capture": {
       "fn": 0,
-      "fp": 0,
+      "fp": 24,
       "total": 72,
       "tp": 0
     },
     "data_exfiltration": {
-      "fn": 27,
+      "fn": 9,
       "fp": 0,
       "total": 45,
-      "tp": 18
+      "tp": 36
     },
     "destructive_command": {
       "fn": 13,
@@ -51,32 +52,32 @@
       "tp": 32
     },
     "prompt_injection": {
+      "fn": 8,
+      "fp": 0,
+      "total": 45,
+      "tp": 37
+    },
+    "safety_bypass": {
+      "fn": 9,
+      "fp": 0,
+      "total": 45,
+      "tp": 36
+    },
+    "sensitive_data_request": {
+      "fn": 22,
+      "fp": 0,
+      "total": 45,
+      "tp": 23
+    },
+    "system_prompt_extraction": {
       "fn": 16,
       "fp": 0,
       "total": 45,
       "tp": 29
-    },
-    "safety_bypass": {
-      "fn": 13,
-      "fp": 0,
-      "total": 45,
-      "tp": 32
-    },
-    "sensitive_data_request": {
-      "fn": 18,
-      "fp": 0,
-      "total": 45,
-      "tp": 27
-    },
-    "system_prompt_extraction": {
-      "fn": 12,
-      "fp": 0,
-      "total": 45,
-      "tp": 33
     }
   },
   "split": "regression",
   "threshold": 0.3,
-  "tn": 106,
-  "tp": 171
+  "tn": 82,
+  "tp": 193
 }

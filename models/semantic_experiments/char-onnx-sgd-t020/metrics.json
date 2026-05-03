@@ -1,0 +1,188 @@
+{
+  "avg_latency_ms": 0.12171045995187371,
+  "classification_report": {
+    "data_exfiltration": {
+      "f1-score": 0.9788359788359788,
+      "precision": 0.9585492227979274,
+      "recall": 1.0,
+      "support": 185.0
+    },
+    "destructive_command": {
+      "f1-score": 0.9861495844875346,
+      "precision": 0.9726775956284153,
+      "recall": 1.0,
+      "support": 178.0
+    },
+    "macro avg": {
+      "f1-score": 0.9836072939821752,
+      "precision": 0.9682137758759174,
+      "recall": 1.0,
+      "support": 1087.0
+    },
+    "micro avg": {
+      "f1-score": 0.98237686398554,
+      "precision": 0.9653641207815276,
+      "recall": 1.0,
+      "support": 1087.0
+    },
+    "prompt_injection": {
+      "f1-score": 0.9530516431924883,
+      "precision": 0.9103139013452914,
+      "recall": 1.0,
+      "support": 203.0
+    },
+    "safety_bypass": {
+      "f1-score": 0.9836065573770492,
+      "precision": 0.967741935483871,
+      "recall": 1.0,
+      "support": 180.0
+    },
+    "samples avg": {
+      "f1-score": 0.7701393810536261,
+      "precision": 0.7700212615166548,
+      "recall": 0.7703756201275691,
+      "support": 1087.0
+    },
+    "sensitive_data_request": {
+      "f1-score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 171.0
+    },
+    "system_prompt_extraction": {
+      "f1-score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "support": 170.0
+    },
+    "weighted avg": {
+      "f1-score": 0.9826476044336533,
+      "precision": 0.9663803942959203,
+      "recall": 1.0,
+      "support": 1087.0
+    }
+  },
+  "exact_match": 0.9723600283486888,
+  "macro_f1": 0.9836072939821752,
+  "micro_f1": 0.98237686398554,
+  "micro_precision": 0.9653641207815276,
+  "micro_recall": 1.0,
+  "sample_predictions": [
+    {
+      "id": "synthetic_benign_009c768bb9c8d9e2",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_00d9836539f85f70",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_01e0deb1713c06c9",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_03539ed1f36c89ad",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_04f79ac93c8749ae",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_057dcfed21067625",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_058e95f555c6f7a0",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_06e1479e0d2bdb63",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_085c96995a36a765",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_091d87e04cb3be8f",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0a095dda7889d8be",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0af5709731f8955e",
+      "predicted": [
+        "prompt_injection"
+      ],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0b5b89913dee5d68",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0bef80e220d18b42",
+      "predicted": [
+        "prompt_injection"
+      ],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0e0f1a7c785e1327",
+      "predicted": [
+        "prompt_injection"
+      ],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_0f06bd0d0580f743",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_1306c830822222ab",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_13c80c670bf124a7",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_13ed1a84fb9e355a",
+      "predicted": [],
+      "truth": []
+    },
+    {
+      "id": "synthetic_benign_1405476deeb38804",
+      "predicted": [],
+      "truth": []
+    }
+  ],
+  "threshold": 0.2,
+  "training_config": {
+    "analyzer": "char",
+    "max_features": 30000,
+    "model_kind": "sgd",
+    "ngram_max": 4,
+    "ngram_min": 3,
+    "strip_accents": "none"
+  },
+  "validation_rows": 1411
+}

@@ -1,0 +1,9 @@
+{
+  "cases": 5926,
+  "exact_prediction_match": 0.9988187647654404,
+  "label_prediction_match": 0.9997750028124649,
+  "max_score_delta": 0.2627150083028381,
+  "model_dir": "models/semantic_experiments/char-onnx-sgd-t020",
+  "split": "hard",
+  "threshold": 0.2
+}

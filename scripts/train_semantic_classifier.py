@@ -161,7 +161,7 @@ def main() -> None:
     parser.add_argument("--data", type=Path, default=DEFAULT_DATA)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--threshold", type=float, default=0.42)
-    parser.add_argument("--analyzer", choices=["word", "char_wb"], default="char_wb")
+    parser.add_argument("--analyzer", choices=["word", "char", "char_wb"], default="char_wb")
     parser.add_argument("--ngram-min", type=int, default=3)
     parser.add_argument("--ngram-max", type=int, default=4)
     parser.add_argument("--max-features", type=int, default=30_000)
