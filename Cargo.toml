@@ -2,3 +2,6 @@
 name = "armorer-guard"
 version = "0.1.2"
 edition = "2021"
+
+[dependencies]
+ort = { version = "2.0.0-rc.12", features = ["copy-dylibs", "download-binaries"] }

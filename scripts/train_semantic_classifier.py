@@ -148,6 +148,7 @@ def export_onnx(model: Pipeline, out_path: Path) -> bool:
             model,
             initial_types=[("text", StringTensorType([None, 1]))],
             target_opset=15,
+            options={"zipmap": False},
         )
         out_path.write_bytes(onx.SerializeToString())
         return True

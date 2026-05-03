@@ -48,10 +48,13 @@ def main() -> None:
         batch = np.array(texts[start : start + args.batch_size], dtype=object).reshape((-1, 1))
         outputs = session.run(None, {input_name: batch})
         probabilities = outputs[1]
-        scores = np.zeros((len(probabilities), sklearn_scores.shape[1]), dtype=float)
-        for row_index, row_scores in enumerate(probabilities):
-            for label_index, score in row_scores.items():
-                scores[row_index, int(label_index)] = float(score)
+        if isinstance(probabilities, list):
+            scores = np.zeros((len(probabilities), sklearn_scores.shape[1]), dtype=float)
+            for row_index, row_scores in enumerate(probabilities):
+                for label_index, score in row_scores.items():
+                    scores[row_index, int(label_index)] = float(score)
+        else:
+            scores = np.asarray(probabilities, dtype=float)
         onnx_scores.append(scores)
 
     onnx_scores_array = np.vstack(onnx_scores) if onnx_scores else np.zeros_like(sklearn_scores)

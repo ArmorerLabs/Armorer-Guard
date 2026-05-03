@@ -17,16 +17,32 @@ def _binary_name() -> str:
     return "armorer-guard.exe" if os.name == "nt" else "armorer-guard"
 
 
+def _copy_runtime_artifacts(target_dir: Path) -> None:
+    release_dir = ROOT / "target" / "release"
+    binary = release_dir / _binary_name()
+    if not binary.exists():
+        raise RuntimeError(f"expected Guard binary at {binary}")
+    target_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(binary, target_dir / binary.name)
+    (target_dir / binary.name).chmod(0o755)
+
+    for artifact in release_dir.iterdir():
+        name = artifact.name
+        is_onnx_runtime = (
+            name.startswith("libonnxruntime")
+            or name.startswith("onnxruntime")
+            or "onnxruntime" in name
+        )
+        has_runtime_extension = artifact.suffix in {".dylib", ".dll", ".so"} or ".so." in name
+        if artifact.is_file() and is_onnx_runtime and has_runtime_extension:
+            shutil.copy2(artifact, target_dir / name)
+
+
 class build_py(_build_py):
     def run(self) -> None:
         subprocess.run(["cargo", "build", "--release", "--locked"], cwd=ROOT, check=True)
-        source = ROOT / "target" / "release" / _binary_name()
-        if not source.exists():
-            raise RuntimeError(f"expected Guard binary at {source}")
         target = ROOT / "armorer_guard" / "bin" / _binary_name()
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, target)
-        target.chmod(0o755)
+        _copy_runtime_artifacts(target.parent)
         super().run()
 
 
@@ -48,6 +64,15 @@ class BinaryDistribution(Distribution):
 setup(
     distclass=BinaryDistribution,
     packages=find_packages(),
-    package_data={"armorer_guard": ["bin/armorer-guard", "bin/armorer-guard.exe"]},
+    package_data={
+        "armorer_guard": [
+            "bin/armorer-guard",
+            "bin/armorer-guard.exe",
+            "bin/*.dylib",
+            "bin/*.dll",
+            "bin/*.so",
+            "bin/*.so.*",
+        ]
+    },
     cmdclass={"build_py": build_py, "bdist_wheel": bdist_wheel},
 )

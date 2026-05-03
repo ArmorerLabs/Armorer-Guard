@@ -1,5 +1,5 @@
 {
-  "avg_latency_ms": 0.02402185167375395,
+  "avg_latency_ms": 0.02470918984530582,
   "classification_report": {
     "data_exfiltration": {
       "f1-score": 0.9762532981530343,
