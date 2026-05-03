@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import os
+import platform
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 from setuptools import Distribution, find_packages, setup
@@ -38,9 +40,21 @@ def _copy_runtime_artifacts(target_dir: Path) -> None:
             shutil.copy2(artifact, target_dir / name)
 
 
+def _cargo_build_command() -> list[str]:
+    command = ["cargo", "build", "--release", "--locked"]
+    force_onnx = os.environ.get("ARMORER_GUARD_ONNX")
+    is_linux_arm64 = sys.platform.startswith("linux") and platform.machine().lower() in {
+        "aarch64",
+        "arm64",
+    }
+    if force_onnx == "0" or (force_onnx is None and is_linux_arm64):
+        command.append("--no-default-features")
+    return command
+
+
 class build_py(_build_py):
     def run(self) -> None:
-        subprocess.run(["cargo", "build", "--release", "--locked"], cwd=ROOT, check=True)
+        subprocess.run(_cargo_build_command(), cwd=ROOT, check=True)
         target = ROOT / "armorer_guard" / "bin" / _binary_name()
         _copy_runtime_artifacts(target.parent)
         super().run()

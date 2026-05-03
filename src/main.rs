@@ -1,5 +1,8 @@
 use std::io::{self, Read};
+#[cfg(feature = "onnx")]
+use std::sync::{Mutex, OnceLock};
 
+#[cfg(feature = "onnx")]
 use ort::{session::Session, value::Tensor};
 
 #[derive(Debug, PartialEq)]
@@ -289,6 +292,7 @@ enum ThreatCategory {
 }
 
 impl ThreatCategory {
+    #[cfg(feature = "onnx")]
     fn from_onnx_label(index: usize) -> Option<Self> {
         match index {
             0 => Some(ThreatCategory::PromptInjection),
@@ -1086,8 +1090,12 @@ fn similarity_categories(text: &str) -> Vec<ThreatCategory> {
 }
 
 const DEV_EXEMPLARS_TSV: &str = include_str!("dev_exemplars.tsv");
+#[cfg(feature = "onnx")]
 const ONNX_MODEL_BYTES: &[u8] = include_bytes!("semantic_classifier.onnx");
+#[cfg(feature = "onnx")]
 const ONNX_THRESHOLD: f64 = 0.80;
+#[cfg(feature = "onnx")]
+static ONNX_INFERENCE_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 
 fn dev_exemplars() -> Vec<(ThreatCategory, &'static str)> {
     DEV_EXEMPLARS_TSV
@@ -1110,7 +1118,14 @@ fn dev_exemplars() -> Vec<(ThreatCategory, &'static str)> {
         .collect()
 }
 
+#[cfg(feature = "onnx")]
 fn onnx_categories(text: &str) -> Vec<(ThreatCategory, f64)> {
+    let lock = ONNX_INFERENCE_LOCK.get_or_init(|| Mutex::new(()));
+    let _guard = match lock.lock() {
+        Ok(guard) => guard,
+        Err(_) => return Vec::new(),
+    };
+
     let mut session = match Session::builder()
         .and_then(|mut builder| builder.commit_from_memory(ONNX_MODEL_BYTES))
     {
@@ -1141,6 +1156,11 @@ fn onnx_categories(text: &str) -> Vec<(ThreatCategory, f64)> {
             }
         })
         .collect()
+}
+
+#[cfg(not(feature = "onnx"))]
+fn onnx_categories(_text: &str) -> Vec<(ThreatCategory, f64)> {
+    Vec::new()
 }
 
 fn layered_reasons(text: &str) -> (Vec<String>, f64) {
@@ -1329,8 +1349,14 @@ fn credential_json(response: Option<CredentialResponse>) -> String {
     }
 }
 
+#[cfg(feature = "onnx")]
 fn capabilities_json() -> &'static str {
     r#"{"name":"Armorer Guard","implementation_language":"rust","runtime_model":"local_first_no_network","public_contract":["inspect_input","inspect_output","sanitize_text","detect_credentials"],"cli_modes":["inspect","sanitize","detect-credentials","capabilities"],"lanes":[{"id":"credential_lane","status":"active","description":"Deterministic credential recognition, redaction, capture, provider type inference, and suggested environment key names.","reasons":["detected:credential"],"credential_types":["notion","github","openrouter","openai","gemini","telegram_bot","generic_secret"]},{"id":"semantic_lane","status":"active","description":"Hybrid local semantic detection: deterministic rules plus bundled ONNX word-ngram SGD classifier for non-token prompt-injection, exfiltration, safety-bypass, destructive-command, system-prompt-extraction, and sensitive-data request classes. ONNX predictions are promoted only when high-confidence so the model augments, not destabilizes, policy decisions.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"],"model":{"format":"onnx","name":"word-sgd-onnx-v1","threshold":0.8,"training_source":"can_train=true private development corpus only"}},{"id":"similarity_lane","status":"active","description":"Local token-set similarity against Armorer-owned can_train=true development exemplars from src/dev_exemplars.tsv. Eval rows are never indexed.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"]},{"id":"policy_lane","status":"active","description":"Runtime/action-aware policy labels for categories that should be blockable regardless of semantic wording.","reasons":["policy:credential_disclosure","policy:dangerous_tool_call"]}],"confidence_policy":{"credential_detection":"0.75-0.99 depending on provider specificity","sensitive_data_request":"0.74 observe/escalate by default, below 0.80 block threshold unless classifier or policy confidence is higher","prompt_injection":"0.88 for rules plus ONNX score for classifier-only hits","system_prompt_extraction":"0.88 for rules plus ONNX score for classifier-only hits","data_exfiltration":"0.92 for rules plus ONNX score for classifier-only hits","safety_bypass":"0.91 for rules plus ONNX score for classifier-only hits","destructive_command":"0.94 for rules plus ONNX score for classifier-only hits"},"boundaries":{"network_calls":"none","python_detection_logic":"none; Python package shells out to the Rust binary","model_weights":"bundled ONNX classifier bytes in the Rust binary","corpus_policy":"Similarity exemplars and ONNX training rows must come from Armorer-owned can_train=true development data. Regression, hard, and holdout eval text must not be copied into rules, prompts, exemplars, or model training data."},"known_limitations":["ONNX classifier is a lightweight word-ngram model, not a transformer classifier.","Similarity lane uses lightweight Jaccard token overlap and should be replaced or augmented by local embeddings.","Context argument is accepted by wrappers for API compatibility but not consumed by the current Rust binary.","The binary does not perform tool execution; it only classifies, redacts, and reports reasons."]}"#
+}
+
+#[cfg(not(feature = "onnx"))]
+fn capabilities_json() -> &'static str {
+    r#"{"name":"Armorer Guard","implementation_language":"rust","runtime_model":"local_first_no_network","public_contract":["inspect_input","inspect_output","sanitize_text","detect_credentials"],"cli_modes":["inspect","sanitize","detect-credentials","capabilities"],"lanes":[{"id":"credential_lane","status":"active","description":"Deterministic credential recognition, redaction, capture, provider type inference, and suggested environment key names.","reasons":["detected:credential"],"credential_types":["notion","github","openrouter","openai","gemini","telegram_bot","generic_secret"]},{"id":"semantic_lane","status":"active","description":"Local deterministic semantic detection for non-token prompt-injection, exfiltration, safety-bypass, destructive-command, system-prompt-extraction, and sensitive-data request classes. ONNX is disabled in this build because the target platform does not have a compatible ONNX Runtime binary.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"],"model":{"format":"onnx","name":"word-sgd-onnx-v1","status":"disabled_at_build","reason":"target platform lacks a compatible ONNX Runtime binary"}},{"id":"similarity_lane","status":"active","description":"Local token-set similarity against Armorer-owned can_train=true development exemplars from src/dev_exemplars.tsv. Eval rows are never indexed.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"]},{"id":"policy_lane","status":"active","description":"Runtime/action-aware policy labels for categories that should be blockable regardless of semantic wording.","reasons":["policy:credential_disclosure","policy:dangerous_tool_call"]}],"confidence_policy":{"credential_detection":"0.75-0.99 depending on provider specificity","sensitive_data_request":"0.74 observe/escalate by default, below 0.80 block threshold","prompt_injection":"0.88","system_prompt_extraction":"0.88","data_exfiltration":"0.92","safety_bypass":"0.91","destructive_command":"0.94"},"boundaries":{"network_calls":"none","python_detection_logic":"none; Python package shells out to the Rust binary","model_weights":"ONNX bytes are present in source but not linked into this build","corpus_policy":"Similarity exemplars and ONNX training rows must come from Armorer-owned can_train=true development data. Regression, hard, and holdout eval text must not be copied into rules, prompts, exemplars, or model training data."},"known_limitations":["ONNX classifier is disabled for this build; deterministic and similarity lanes remain active.","Similarity lane uses lightweight Jaccard token overlap and should be replaced or augmented by local embeddings.","Context argument is accepted by wrappers for API compatibility but not consumed by the current Rust binary.","The binary does not perform tool execution; it only classifies, redacts, and reports reasons."]}"#
 }
 
 fn main() {
