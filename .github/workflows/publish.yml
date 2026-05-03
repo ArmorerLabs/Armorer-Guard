@@ -35,8 +35,8 @@ jobs:
           CIBW_BUILD: cp310-*
           CIBW_SKIP: "*-musllinux*"
           CIBW_ARCHS_LINUX: x86_64 aarch64
-          CIBW_BEFORE_ALL_LINUX: yum install -y openssl-devel pkgconfig && curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
-          CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH"
+          CIBW_BEFORE_ALL_LINUX: curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
+          CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH" ARMORER_GUARD_ONNX=0
           CIBW_TEST_COMMAND: python -c "import armorer_guard; result = armorer_guard.inspect_input('GH_TOKEN=dummyGithubToken123456789'); assert '[REDACTED_SECRET_VALUE]' in result.sanitized_text"
 
       - name: Upload wheel artifact
