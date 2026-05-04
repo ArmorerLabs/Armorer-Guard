@@ -1,11 +1,4 @@
 [package]
 name = "armorer-guard"
-version = "0.1.5"
+version = "0.2.0"
 edition = "2021"
-
-[features]
-default = ["onnx"]
-onnx = ["dep:ort"]
-
-[dependencies]
-ort = { version = "2.0.0-rc.12", optional = true, features = ["copy-dylibs", "download-binaries"] }

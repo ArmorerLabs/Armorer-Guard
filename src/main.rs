@@ -1,9 +1,6 @@
+use std::collections::HashMap;
 use std::io::{self, Read};
-#[cfg(feature = "onnx")]
-use std::sync::{Mutex, OnceLock};
-
-#[cfg(feature = "onnx")]
-use ort::{session::Session, value::Tensor};
+use std::sync::OnceLock;
 
 #[derive(Debug, PartialEq)]
 struct InspectResponse {
@@ -292,8 +289,7 @@ enum ThreatCategory {
 }
 
 impl ThreatCategory {
-    #[cfg(feature = "onnx")]
-    fn from_onnx_label(index: usize) -> Option<Self> {
+    fn from_model_label(index: usize) -> Option<Self> {
         match index {
             0 => Some(ThreatCategory::PromptInjection),
             1 => Some(ThreatCategory::SystemPromptExtraction),
@@ -1090,12 +1086,22 @@ fn similarity_categories(text: &str) -> Vec<ThreatCategory> {
 }
 
 const DEV_EXEMPLARS_TSV: &str = include_str!("dev_exemplars.tsv");
-#[cfg(feature = "onnx")]
-const ONNX_MODEL_BYTES: &[u8] = include_bytes!("semantic_classifier.onnx");
-#[cfg(feature = "onnx")]
-const ONNX_THRESHOLD: f64 = 0.80;
-#[cfg(feature = "onnx")]
-static ONNX_INFERENCE_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+const NATIVE_MODEL_TSV: &str = include_str!("semantic_classifier_native.tsv");
+const NATIVE_MODEL_THRESHOLD: f64 = 0.80;
+static NATIVE_MODEL: OnceLock<NativeSemanticModel> = OnceLock::new();
+
+#[derive(Debug)]
+struct NativeFeature {
+    idf: f64,
+    coefficients: [f64; 6],
+}
+
+#[derive(Debug)]
+struct NativeSemanticModel {
+    features: Vec<NativeFeature>,
+    lookup: HashMap<&'static str, usize>,
+    intercepts: [f64; 6],
+}
 
 fn dev_exemplars() -> Vec<(ThreatCategory, &'static str)> {
     DEV_EXEMPLARS_TSV
@@ -1118,49 +1124,150 @@ fn dev_exemplars() -> Vec<(ThreatCategory, &'static str)> {
         .collect()
 }
 
-#[cfg(feature = "onnx")]
-fn onnx_categories(text: &str) -> Vec<(ThreatCategory, f64)> {
-    let lock = ONNX_INFERENCE_LOCK.get_or_init(|| Mutex::new(()));
-    let _guard = match lock.lock() {
-        Ok(guard) => guard,
-        Err(_) => return Vec::new(),
-    };
+fn native_semantic_model() -> &'static NativeSemanticModel {
+    NATIVE_MODEL.get_or_init(|| {
+        let mut features = Vec::new();
+        let mut lookup = HashMap::new();
+        let mut intercepts = [0.0; 6];
 
-    let mut session = match Session::builder()
-        .and_then(|mut builder| builder.commit_from_memory(ONNX_MODEL_BYTES))
-    {
-        Ok(session) => session,
-        Err(_) => return Vec::new(),
-    };
-    let input_text = vec![text.to_string()];
-    let input = match Tensor::from_string_array(([1usize, 1usize], input_text.as_slice())) {
-        Ok(input) => input,
-        Err(_) => return Vec::new(),
-    };
-    let outputs = match session.run(ort::inputs![input]) {
-        Ok(outputs) => outputs,
-        Err(_) => return Vec::new(),
-    };
-    let Ok((_, probabilities)) = outputs["probabilities"].try_extract_tensor::<f32>() else {
-        return Vec::new();
-    };
-    probabilities
+        for line in NATIVE_MODEL_TSV.lines() {
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+            if let Some(metadata) = trimmed.strip_prefix("# {") {
+                if let Some(values) = metadata.split("\"intercepts\":[").nth(1) {
+                    if let Some(raw_intercepts) = values.split(']').next() {
+                        for (index, value) in raw_intercepts.split(',').enumerate().take(6) {
+                            intercepts[index] = value.trim().parse::<f64>().unwrap_or(0.0);
+                        }
+                    }
+                }
+                continue;
+            }
+            if trimmed.starts_with('#') {
+                continue;
+            }
+
+            let mut parts = trimmed.split('\t');
+            let Some(term) = parts.next() else {
+                continue;
+            };
+            let idf = parts
+                .next()
+                .and_then(|value| value.parse::<f64>().ok())
+                .unwrap_or(0.0);
+            let mut coefficients = [0.0; 6];
+            for coefficient in &mut coefficients {
+                *coefficient = parts
+                    .next()
+                    .and_then(|value| value.parse::<f64>().ok())
+                    .unwrap_or(0.0);
+            }
+            let index = features.len();
+            features.push(NativeFeature { idf, coefficients });
+            lookup.insert(term, index);
+        }
+
+        NativeSemanticModel {
+            features,
+            lookup,
+            intercepts,
+        }
+    })
+}
+
+fn semantic_model_tokens(text: &str) -> Vec<String> {
+    let mut words = Vec::new();
+    let mut current = String::new();
+    for ch in text.chars().flat_map(char::to_lowercase) {
+        if ch.is_alphanumeric() || ch == '_' {
+            current.push(ch);
+        } else if current.chars().count() >= 2 {
+            words.push(std::mem::take(&mut current));
+        } else {
+            current.clear();
+        }
+    }
+    if current.chars().count() >= 2 {
+        words.push(current);
+    }
+    words
+}
+
+fn semantic_model_feature_counts(text: &str, model: &NativeSemanticModel) -> HashMap<usize, f64> {
+    let words = semantic_model_tokens(text);
+    let mut counts: HashMap<usize, f64> = HashMap::new();
+    for word in &words {
+        if let Some(index) = model.lookup.get(word.as_str()) {
+            *counts.entry(*index).or_insert(0.0) += 1.0;
+        }
+    }
+    for pair in words.windows(2) {
+        let bigram = format!("{} {}", pair[0], pair[1]);
+        if let Some(index) = model.lookup.get(bigram.as_str()) {
+            *counts.entry(*index).or_insert(0.0) += 1.0;
+        }
+    }
+    counts
+}
+
+fn sigmoid(value: f64) -> f64 {
+    if value >= 0.0 {
+        let z = (-value).exp();
+        1.0 / (1.0 + z)
+    } else {
+        let z = value.exp();
+        z / (1.0 + z)
+    }
+}
+
+fn native_model_scores(text: &str) -> [f64; 6] {
+    let model = native_semantic_model();
+    let counts = semantic_model_feature_counts(text, model);
+    if counts.is_empty() {
+        return [0.0; 6];
+    }
+
+    let mut norm = 0.0f64;
+    for (index, count) in &counts {
+        let value = count * model.features[*index].idf;
+        norm += value * value;
+    }
+    norm = norm.sqrt();
+    if norm <= f64::EPSILON {
+        return [0.0; 6];
+    }
+
+    let mut logits = model.intercepts;
+    for (index, count) in counts {
+        let feature = &model.features[index];
+        let value = (count * feature.idf) / norm;
+        for (label_index, coefficient) in feature.coefficients.iter().enumerate() {
+            logits[label_index] += value * coefficient;
+        }
+    }
+
+    let mut scores = [0.0; 6];
+    for (index, logit) in logits.iter().enumerate() {
+        scores[index] = sigmoid(*logit);
+    }
+    scores
+}
+
+fn native_model_categories(text: &str) -> Vec<(ThreatCategory, f64)> {
+    native_model_scores(text)
         .iter()
         .enumerate()
         .filter_map(|(index, score)| {
-            let score = *score as f64;
-            if score >= ONNX_THRESHOLD {
-                ThreatCategory::from_onnx_label(index).map(|category| (category, score))
+            let score = *score;
+            if score >= NATIVE_MODEL_THRESHOLD {
+                ThreatCategory::from_model_label(index).map(|category| (category, score))
             } else {
                 None
             }
         })
         .collect()
-}
-
-#[cfg(not(feature = "onnx"))]
-fn onnx_categories(_text: &str) -> Vec<(ThreatCategory, f64)> {
-    Vec::new()
 }
 
 fn layered_reasons(text: &str) -> (Vec<String>, f64) {
@@ -1170,9 +1277,9 @@ fn layered_reasons(text: &str) -> (Vec<String>, f64) {
             rule_categories.push(category);
         }
     }
-    let onnx_predictions = onnx_categories(text);
+    let model_predictions = native_model_categories(text);
     let mut categories = rule_categories.clone();
-    for (category, _) in &onnx_predictions {
+    for (category, _) in &model_predictions {
         if !categories.contains(category) {
             categories.push(*category);
         }
@@ -1193,7 +1300,7 @@ fn layered_reasons(text: &str) -> (Vec<String>, f64) {
     for category in rule_categories {
         confidence = confidence.max(category.confidence());
     }
-    for (_, score) in onnx_predictions {
+    for (_, score) in model_predictions {
         confidence = confidence.max(score);
     }
 
@@ -1349,14 +1456,22 @@ fn credential_json(response: Option<CredentialResponse>) -> String {
     }
 }
 
-#[cfg(feature = "onnx")]
-fn capabilities_json() -> &'static str {
-    r#"{"name":"Armorer Guard","implementation_language":"rust","runtime_model":"local_first_no_network","public_contract":["inspect_input","inspect_output","sanitize_text","detect_credentials"],"cli_modes":["inspect","sanitize","detect-credentials","capabilities"],"lanes":[{"id":"credential_lane","status":"active","description":"Deterministic credential recognition, redaction, capture, provider type inference, and suggested environment key names.","reasons":["detected:credential"],"credential_types":["notion","github","openrouter","openai","gemini","telegram_bot","generic_secret"]},{"id":"semantic_lane","status":"active","description":"Hybrid local semantic detection: deterministic rules plus bundled ONNX word-ngram SGD classifier for non-token prompt-injection, exfiltration, safety-bypass, destructive-command, system-prompt-extraction, and sensitive-data request classes. ONNX predictions are promoted only when high-confidence so the model augments, not destabilizes, policy decisions.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"],"model":{"format":"onnx","name":"word-sgd-onnx-v1","threshold":0.8,"training_source":"can_train=true private development corpus only"}},{"id":"similarity_lane","status":"active","description":"Local token-set similarity against Armorer-owned can_train=true development exemplars from src/dev_exemplars.tsv. Eval rows are never indexed.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"]},{"id":"policy_lane","status":"active","description":"Runtime/action-aware policy labels for categories that should be blockable regardless of semantic wording.","reasons":["policy:credential_disclosure","policy:dangerous_tool_call"]}],"confidence_policy":{"credential_detection":"0.75-0.99 depending on provider specificity","sensitive_data_request":"0.74 observe/escalate by default, below 0.80 block threshold unless classifier or policy confidence is higher","prompt_injection":"0.88 for rules plus ONNX score for classifier-only hits","system_prompt_extraction":"0.88 for rules plus ONNX score for classifier-only hits","data_exfiltration":"0.92 for rules plus ONNX score for classifier-only hits","safety_bypass":"0.91 for rules plus ONNX score for classifier-only hits","destructive_command":"0.94 for rules plus ONNX score for classifier-only hits"},"boundaries":{"network_calls":"none","python_detection_logic":"none; Python package shells out to the Rust binary","model_weights":"bundled ONNX classifier bytes in the Rust binary","corpus_policy":"Similarity exemplars and ONNX training rows must come from Armorer-owned can_train=true development data. Regression, hard, and holdout eval text must not be copied into rules, prompts, exemplars, or model training data."},"known_limitations":["ONNX classifier is a lightweight word-ngram model, not a transformer classifier.","Similarity lane uses lightweight Jaccard token overlap and should be replaced or augmented by local embeddings.","Context argument is accepted by wrappers for API compatibility but not consumed by the current Rust binary.","The binary does not perform tool execution; it only classifies, redacts, and reports reasons."]}"#
+fn semantic_scores_json(text: &str) -> String {
+    let scores = native_model_scores(text);
+    format!(
+        "{{\"model\":\"word-sgd-native-v1\",\"threshold\":{},\"scores\":{{\"prompt_injection\":{},\"system_prompt_extraction\":{},\"data_exfiltration\":{},\"sensitive_data_request\":{},\"safety_bypass\":{},\"destructive_command\":{}}}}}",
+        NATIVE_MODEL_THRESHOLD,
+        scores[0],
+        scores[1],
+        scores[2],
+        scores[3],
+        scores[4],
+        scores[5],
+    )
 }
 
-#[cfg(not(feature = "onnx"))]
 fn capabilities_json() -> &'static str {
-    r#"{"name":"Armorer Guard","implementation_language":"rust","runtime_model":"local_first_no_network","public_contract":["inspect_input","inspect_output","sanitize_text","detect_credentials"],"cli_modes":["inspect","sanitize","detect-credentials","capabilities"],"lanes":[{"id":"credential_lane","status":"active","description":"Deterministic credential recognition, redaction, capture, provider type inference, and suggested environment key names.","reasons":["detected:credential"],"credential_types":["notion","github","openrouter","openai","gemini","telegram_bot","generic_secret"]},{"id":"semantic_lane","status":"active","description":"Local deterministic semantic detection for non-token prompt-injection, exfiltration, safety-bypass, destructive-command, system-prompt-extraction, and sensitive-data request classes. ONNX is disabled in this build because the target platform does not have a compatible ONNX Runtime binary.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"],"model":{"format":"onnx","name":"word-sgd-onnx-v1","status":"disabled_at_build","reason":"target platform lacks a compatible ONNX Runtime binary"}},{"id":"similarity_lane","status":"active","description":"Local token-set similarity against Armorer-owned can_train=true development exemplars from src/dev_exemplars.tsv. Eval rows are never indexed.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"]},{"id":"policy_lane","status":"active","description":"Runtime/action-aware policy labels for categories that should be blockable regardless of semantic wording.","reasons":["policy:credential_disclosure","policy:dangerous_tool_call"]}],"confidence_policy":{"credential_detection":"0.75-0.99 depending on provider specificity","sensitive_data_request":"0.74 observe/escalate by default, below 0.80 block threshold","prompt_injection":"0.88","system_prompt_extraction":"0.88","data_exfiltration":"0.92","safety_bypass":"0.91","destructive_command":"0.94"},"boundaries":{"network_calls":"none","python_detection_logic":"none; Python package shells out to the Rust binary","model_weights":"ONNX bytes are present in source but not linked into this build","corpus_policy":"Similarity exemplars and ONNX training rows must come from Armorer-owned can_train=true development data. Regression, hard, and holdout eval text must not be copied into rules, prompts, exemplars, or model training data."},"known_limitations":["ONNX classifier is disabled for this build; deterministic and similarity lanes remain active.","Similarity lane uses lightweight Jaccard token overlap and should be replaced or augmented by local embeddings.","Context argument is accepted by wrappers for API compatibility but not consumed by the current Rust binary.","The binary does not perform tool execution; it only classifies, redacts, and reports reasons."]}"#
+    r#"{"name":"Armorer Guard","implementation_language":"rust","runtime_model":"local_first_no_network","public_contract":["inspect_input","inspect_output","sanitize_text","detect_credentials"],"cli_modes":["inspect","sanitize","detect-credentials","semantic-scores","capabilities"],"lanes":[{"id":"credential_lane","status":"active","description":"Deterministic credential recognition, redaction, capture, provider type inference, and suggested environment key names.","reasons":["detected:credential"],"credential_types":["notion","github","openrouter","openai","gemini","telegram_bot","generic_secret"]},{"id":"semantic_lane","status":"active","description":"Hybrid local semantic detection: deterministic rules plus bundled native Rust TF-IDF linear classifier for non-token prompt-injection, exfiltration, safety-bypass, destructive-command, system-prompt-extraction, and sensitive-data request classes. Classifier predictions are promoted only when high-confidence so the model augments, not destabilizes, policy decisions.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"],"model":{"format":"native_rust_tfidf_linear","name":"word-sgd-native-v1","threshold":0.8,"training_source":"can_train=true private development corpus only","source_model":"models/semantic_experiments/word-sgd-onnx-t014/semantic_classifier.joblib"}},{"id":"similarity_lane","status":"active","description":"Local token-set similarity against Armorer-owned can_train=true development exemplars from src/dev_exemplars.tsv. Eval rows are never indexed.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"]},{"id":"policy_lane","status":"active","description":"Runtime/action-aware policy labels for categories that should be blockable regardless of semantic wording.","reasons":["policy:credential_disclosure","policy:dangerous_tool_call"]}],"confidence_policy":{"credential_detection":"0.75-0.99 depending on provider specificity","sensitive_data_request":"0.74 observe/escalate by default, below 0.80 block threshold unless classifier or policy confidence is higher","prompt_injection":"0.88 for rules plus classifier score for model-only hits","system_prompt_extraction":"0.88 for rules plus classifier score for model-only hits","data_exfiltration":"0.92 for rules plus classifier score for model-only hits","safety_bypass":"0.91 for rules plus classifier score for model-only hits","destructive_command":"0.94 for rules plus classifier score for model-only hits"},"boundaries":{"network_calls":"none","python_detection_logic":"none; Python package shells out to the Rust binary","model_weights":"bundled native TSV linear model coefficients in the Rust binary","corpus_policy":"Similarity exemplars and classifier training rows must come from Armorer-owned can_train=true development data. Regression, hard, and holdout eval text must not be copied into rules, prompts, exemplars, or model training data."},"known_limitations":["Native classifier is a lightweight word-ngram linear model, not a transformer classifier.","Similarity lane uses lightweight Jaccard token overlap and should be replaced or augmented by local embeddings.","Context argument is accepted by wrappers for API compatibility but not consumed by the current Rust binary.","The binary does not perform tool execution; it only classifies, redacts, and reports reasons."]}"#
 }
 
 fn main() {
@@ -1371,6 +1486,7 @@ fn main() {
     match mode.as_str() {
         "capabilities" => println!("{}", capabilities_json()),
         "detect-credentials" => println!("{}", credential_json(detect_credentials(&input))),
+        "semantic-scores" => println!("{}", semantic_scores_json(&input)),
         "sanitize" => println!(
             "{{\"sanitized_text\":\"{}\"}}",
             json_escape(&regex_redact(&input))
@@ -1462,7 +1578,7 @@ mod tests {
     }
 
     #[test]
-    fn benign_repo_summary_request_is_not_flagged_by_onnx() {
+    fn benign_repo_summary_request_is_not_flagged_by_semantic_model() {
         let out = inspect("Please summarize this repository and mention any setup risks.");
         assert!(!out.suspicious, "{:?}", out.reasons);
     }
@@ -1508,7 +1624,8 @@ mod tests {
         ));
         assert!(capabilities.contains("\"credential_lane\""));
         assert!(capabilities.contains("\"policy_lane\""));
-        assert!(capabilities.contains("\"format\":\"onnx\""));
+        assert!(capabilities.contains("\"format\":\"native_rust_tfidf_linear\""));
+        assert!(capabilities.contains("\"name\":\"word-sgd-native-v1\""));
         assert!(capabilities.contains("Eval rows are never indexed"));
     }
 
