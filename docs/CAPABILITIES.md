@@ -25,8 +25,18 @@ Armorer consumes Guard through this stable contract:
 - `detect_credentials(text, context=None)`
 - `capabilities()`
 
-The `context` argument is accepted for compatibility and future policy work. The
-current Rust binary does not consume it yet.
+The `context` argument is optional and now feeds the policy and semantic lanes
+when present. Text-only callers keep the legacy behavior.
+
+Supported context fields:
+
+- `eval_surface`
+- `trace_stage`
+- `artifact_kind`
+- `policy_action`
+- `policy_scope`
+- `tool_name`
+- `destination`
 
 ## Output Contract
 
@@ -101,11 +111,15 @@ Current reason labels:
 Current behavior:
 
 - local only
-- lexical/rule scoring
+- deterministic lexical/rule scoring
+- bundled Rust-native TF-IDF linear classifier, `word-sgd-native-v1`
+- per-category classifier thresholds
+- context discounts for retrieved content, model output, and agent actions
 - no network calls
-- no bundled model weights
 
-This lane is the main target for future local classifier work.
+This lane is still intentionally lightweight. The next major target is a
+stronger local semantic model or embeddings lane that improves generalized
+prompt-injection recall without training on eval rows.
 
 ## Similarity Lane
 
@@ -152,6 +166,13 @@ Current mappings:
 - safety bypass -> `policy:dangerous_tool_call`
 - destructive command -> `policy:dangerous_tool_call`
 
+When structured context is present, the policy lane can also escalate:
+
+- `credential_disclosure`, `outbound_transfer`, or secret-scoped sends -> data exfiltration / sensitive data request
+- `system_disclosure` or `guard_internals` -> system prompt extraction
+- `dangerous_tool_call`, `delete_state`, `force_push`, `drop_database`, `docker_prune`, or `sandbox_escape` -> destructive command
+- `disable_guard`, `sandbox_escape`, or security-control scopes -> safety bypass
+
 ## Confidence Policy
 
 Current confidence values are intentionally simple and stable:
@@ -165,6 +186,15 @@ Current confidence values are intentionally simple and stable:
 - data exfiltration: `0.92`
 - safety bypass: `0.91`
 - destructive command: `0.94`
+
+Classifier-only promotions use per-category thresholds:
+
+- prompt injection: `0.78`
+- system prompt extraction: `0.76`
+- data exfiltration: `0.74`
+- sensitive data request: `0.76`
+- safety bypass: `0.76`
+- destructive command: `0.72`
 
 Armorer can set its own block threshold. The current eval baseline uses `0.80`,
 so sensitive-data requests can be suspicious without always being blockable.
@@ -190,22 +220,21 @@ Armorer Guard does:
 
 ## Known Limitations
 
-- The semantic lane is not a transformer/ONNX classifier yet.
+- The semantic lane is not a transformer classifier.
 - The similarity lane uses simple token overlap, not embeddings.
-- The current binary does not consume structured runtime context.
 - The current binary does not expose per-lane timing or per-lane confidence.
 - The current binary is not a complete replacement for runtime confirmation
   policies in Armorer.
 
 ## Evaluation Expectations
 
-Current baseline should perform poorly on non-token semantic threats. That is
-intentional. The eval dashboard should track improvements across experiments:
+The eval dashboard should track improvements across experiments:
 
 - `baseline`
 - `semantic-local-v1`
 - `semantic-plus-similarity-v1`
 - `semantic-plus-policy-v1`
+- `context-aware-policy-v1`
 
 Acceptance targets for the first smarter milestone:
 

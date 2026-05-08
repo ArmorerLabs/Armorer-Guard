@@ -39,10 +39,14 @@ def binary_path() -> Path:
     return path
 
 
-def _run(mode: str, text: str) -> Any:
+def _run(mode: str, text: str, context: Any = None) -> Any:
+    payload = str(text or "")
+    if context is not None and mode == "inspect":
+        mode = "inspect-json"
+        payload = json.dumps({"text": payload, "context": context}, separators=(",", ":"))
     completed = subprocess.run(
         [str(binary_path()), mode],
-        input=str(text or ""),
+        input=payload,
         capture_output=True,
         text=True,
         timeout=2,
@@ -55,8 +59,7 @@ def _run(mode: str, text: str) -> Any:
 
 
 def inspect_input(text: str, context: Any = None) -> Inspection:
-    del context
-    payload = _run("inspect", text)
+    payload = _run("inspect", text, context=context)
     return Inspection(
         sanitized_text=str(payload.get("sanitized_text", "") or ""),
         suspicious=bool(payload.get("suspicious", False)),

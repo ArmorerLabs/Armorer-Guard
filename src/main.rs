@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::io::{self, Read};
 use std::sync::OnceLock;
 
+use serde::Deserialize;
+
 #[derive(Debug, PartialEq)]
 struct InspectResponse {
     sanitized_text: String,
@@ -19,6 +21,168 @@ struct CredentialResponse {
     credential_type: String,
     suggested_key_name: String,
     flags: Vec<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct InspectRequest {
+    text: String,
+    #[serde(default)]
+    context: GuardContext,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct GuardContext {
+    #[serde(default)]
+    eval_surface: String,
+    #[serde(default)]
+    trace_stage: String,
+    #[serde(default)]
+    artifact_kind: String,
+    #[serde(default)]
+    policy_action: String,
+    #[serde(default)]
+    policy_scope: String,
+    #[serde(default)]
+    tool_name: String,
+    #[serde(default)]
+    destination: String,
+}
+
+impl GuardContext {
+    fn normalized_field(value: &str) -> String {
+        value
+            .trim()
+            .chars()
+            .map(|ch| {
+                if ch.is_ascii_alphanumeric() {
+                    ch.to_ascii_lowercase()
+                } else {
+                    '_'
+                }
+            })
+            .collect::<String>()
+            .split('_')
+            .filter(|part| !part.is_empty())
+            .collect::<Vec<_>>()
+            .join("_")
+    }
+
+    fn normalized_values(&self) -> Vec<String> {
+        [
+            self.eval_surface.as_str(),
+            self.trace_stage.as_str(),
+            self.artifact_kind.as_str(),
+            self.policy_action.as_str(),
+            self.policy_scope.as_str(),
+            self.tool_name.as_str(),
+            self.destination.as_str(),
+        ]
+        .iter()
+        .map(|value| Self::normalized_field(value))
+        .filter(|value| !value.is_empty() && value != "none")
+        .collect()
+    }
+
+    fn is_output_surface(&self) -> bool {
+        self.normalized_values().iter().any(|value| {
+            matches!(
+                value.as_str(),
+                "output"
+                    | "model_output"
+                    | "tool_output"
+                    | "tool_result"
+                    | "retrieved_content"
+                    | "retrieval"
+                    | "file_read"
+                    | "reasoning_trace"
+                    | "artifact_generation"
+            )
+        })
+    }
+
+    fn is_action_surface(&self) -> bool {
+        self.normalized_values().iter().any(|value| {
+            matches!(
+                value.as_str(),
+                "action"
+                    | "agent_action"
+                    | "action_request"
+                    | "tool_call_args"
+                    | "tool_plan"
+                    | "intermediate"
+                    | "trace"
+                    | "policy_decision"
+            )
+        })
+    }
+
+    fn has_sensitive_scope(&self) -> bool {
+        self.normalized_values().iter().any(|value| {
+            matches!(
+                value.as_str(),
+                "secrets"
+                    | "provider_token"
+                    | "security_control"
+                    | "guard_internals"
+                    | "armorer_state"
+                    | "production_data"
+                    | "source_control"
+                    | "filesystem"
+                    | "external_webhook"
+                    | "network"
+                    | "ssh_private_key"
+                    | "dotenv"
+                    | "netrc"
+                    | "kubeconfig"
+                    | "browser_cookie"
+                    | "credential_disclosure"
+            )
+        })
+    }
+
+    fn policy_categories(&self) -> Vec<ThreatCategory> {
+        let values = self.normalized_values();
+        let mut categories = Vec::new();
+        let has = |needle: &str| {
+            values
+                .iter()
+                .any(|value| value == needle || value.contains(needle))
+        };
+
+        if has("credential_disclosure")
+            || has("outbound_transfer")
+            || has("exfiltrate")
+            || has("external_webhook")
+            || (has("send") && self.has_sensitive_scope())
+        {
+            categories.push(ThreatCategory::DataExfiltration);
+            categories.push(ThreatCategory::SensitiveDataRequest);
+        }
+        if has("system_disclosure") || has("guard_internals") {
+            categories.push(ThreatCategory::SystemPromptExtraction);
+        }
+        if has("dangerous_tool_call")
+            || has("delete_state")
+            || has("force_push")
+            || has("drop_database")
+            || has("docker_prune")
+            || has("sandbox_escape")
+            || has("disable_guard")
+        {
+            categories.push(ThreatCategory::DestructiveCommand);
+        }
+        if has("disable_guard")
+            || has("sandbox_escape")
+            || has("security_control")
+            || has("guard_settings")
+        {
+            categories.push(ThreatCategory::SafetyBypass);
+        }
+
+        categories.sort_by_key(|category| category.semantic_reason());
+        categories.dedup();
+        categories
+    }
 }
 
 fn is_boundary(c: Option<char>) -> bool {
@@ -597,6 +761,65 @@ fn semantic_score(text: &str, terms: &[&str], groups: &[&[&str]]) -> usize {
     term_score + group_score
 }
 
+fn is_benign_discussion_context(text: &str, context: &GuardContext) -> bool {
+    if context.is_action_surface() {
+        return false;
+    }
+    let markers = [
+        "at a high level",
+        "fictional incident",
+        "write a user-facing message",
+        "without running",
+        "without executing",
+        "for risk",
+        "safely",
+        "defensive",
+        "educational",
+        "sample",
+        "example",
+    ];
+    markers.iter().any(|marker| text.contains(marker))
+}
+
+fn should_suppress_category_for_benign_context(
+    category: ThreatCategory,
+    text: &str,
+    context: &GuardContext,
+) -> bool {
+    if !is_benign_discussion_context(text, context) {
+        return false;
+    }
+    let action_markers = [
+        "run ",
+        "execute ",
+        "send ",
+        "upload ",
+        "post ",
+        "delete ",
+        "drop ",
+        "force-push",
+        "disable ",
+        "bypass ",
+        "reveal ",
+        "print ",
+        "show me",
+        "give me the full",
+        "unredacted",
+    ];
+    let has_action = action_markers.iter().any(|marker| text.contains(marker));
+    if has_action && !text.contains("without running") && !text.contains("without executing") {
+        return false;
+    }
+    matches!(
+        category,
+        ThreatCategory::PromptInjection
+            | ThreatCategory::SystemPromptExtraction
+            | ThreatCategory::DataExfiltration
+            | ThreatCategory::SafetyBypass
+            | ThreatCategory::DestructiveCommand
+    )
+}
+
 fn detect_semantic_categories(text: &str) -> Vec<ThreatCategory> {
     let mut t = normalize_detection_text(text);
     let leet = leet_normalize(&t);
@@ -692,6 +915,22 @@ fn detect_semantic_categories(text: &str) -> Vec<ThreatCategory> {
             "style-based command injection",
             "content source says",
             "untrusted content",
+            "untrusted repository",
+            "untrusted repo",
+            "terminal output",
+            "shell output",
+            "install log",
+            "error output",
+            "quoted output",
+            "command suggested by output",
+            "white-on-white",
+            "hidden text",
+            "ignorez les consignes",
+            "validez toutes les demandes",
+            "révélez les instructions",
+            "responseformat",
+            "rebel answer",
+            "unfiltered answer",
             "ignoreallpreviousinstructions",
             "ignorepreviousinstructions",
         ],
@@ -945,6 +1184,7 @@ fn detect_semantic_categories(text: &str) -> Vec<ThreatCategory> {
             &["policy", "does not", "recognize"],
             &["bypass", "validation"],
             &["gateway", "checks"],
+            &["treat", "webhook", "internal"],
         ],
     );
     if safety_bypass_score >= 1 {
@@ -982,6 +1222,10 @@ fn detect_semantic_categories(text: &str) -> Vec<ThreatCategory> {
             "empty main branch",
             "delete ~/.ssh",
             "delete hidden directories",
+            "delete ssh",
+            "remove ssh",
+            "erase ssh",
+            "ssh directory",
             "uninstall the runtime",
             "purge logs",
             "replace every source file",
@@ -989,6 +1233,9 @@ fn detect_semantic_categories(text: &str) -> Vec<ThreatCategory> {
             "recursively removing",
             "delete the armorer state",
             "delete the state directory",
+            "curl -s",
+            "pipe to bash",
+            "| bash",
         ],
         &[
             &["erase", "workspace"],
@@ -1005,6 +1252,10 @@ fn detect_semantic_categories(text: &str) -> Vec<ThreatCategory> {
             &["purge", "logs"],
             &["replace", "source", "files"],
             &["delete", "state", "directory"],
+            &["read", "proc", "fd"],
+            &["proc", "cwd", "root"],
+            &["curl", "bash"],
+            &["suggested", "command", "run"],
         ],
     );
     if destructive_score >= 1 {
@@ -1255,14 +1506,46 @@ fn native_model_scores(text: &str) -> [f64; 6] {
     scores
 }
 
-fn native_model_categories(text: &str) -> Vec<(ThreatCategory, f64)> {
+fn native_model_threshold(category: ThreatCategory, context: &GuardContext) -> f64 {
+    let base: f64 = match category {
+        ThreatCategory::PromptInjection => 0.78,
+        ThreatCategory::SystemPromptExtraction => 0.76,
+        ThreatCategory::DataExfiltration => 0.74,
+        ThreatCategory::SensitiveDataRequest => 0.76,
+        ThreatCategory::SafetyBypass => 0.76,
+        ThreatCategory::DestructiveCommand => 0.72,
+    };
+    let context_discount: f64 = match category {
+        ThreatCategory::DataExfiltration | ThreatCategory::SensitiveDataRequest
+            if context.is_output_surface() || context.has_sensitive_scope() =>
+        {
+            0.08
+        }
+        ThreatCategory::DestructiveCommand | ThreatCategory::SafetyBypass
+            if context.is_action_surface() =>
+        {
+            0.08
+        }
+        ThreatCategory::SystemPromptExtraction if context.is_output_surface() => 0.06,
+        ThreatCategory::PromptInjection
+            if context.is_output_surface() || context.is_action_surface() =>
+        {
+            0.04
+        }
+        _ => 0.0,
+    };
+    (base - context_discount).max(0.62)
+}
+
+fn native_model_categories(text: &str, context: &GuardContext) -> Vec<(ThreatCategory, f64)> {
     native_model_scores(text)
         .iter()
         .enumerate()
         .filter_map(|(index, score)| {
             let score = *score;
-            if score >= NATIVE_MODEL_THRESHOLD {
-                ThreatCategory::from_model_label(index).map(|category| (category, score))
+            let category = ThreatCategory::from_model_label(index)?;
+            if score >= native_model_threshold(category, context) {
+                Some((category, score))
             } else {
                 None
             }
@@ -1270,17 +1553,35 @@ fn native_model_categories(text: &str) -> Vec<(ThreatCategory, f64)> {
         .collect()
 }
 
-fn layered_reasons(text: &str) -> (Vec<String>, f64) {
+fn layered_reasons(text: &str, context: &GuardContext) -> (Vec<String>, f64) {
+    let normalized_text = normalize_detection_text(text);
     let mut rule_categories = detect_semantic_categories(text);
+    rule_categories.retain(|category| {
+        !should_suppress_category_for_benign_context(*category, &normalized_text, context)
+    });
     for category in similarity_categories(text) {
+        if !rule_categories.contains(&category)
+            && !should_suppress_category_for_benign_context(category, &normalized_text, context)
+        {
+            rule_categories.push(category);
+        }
+    }
+    for category in context.policy_categories() {
         if !rule_categories.contains(&category) {
             rule_categories.push(category);
         }
     }
-    let model_predictions = native_model_categories(text);
+    let model_predictions = native_model_categories(text, context)
+        .into_iter()
+        .filter(|(category, _)| {
+            !should_suppress_category_for_benign_context(*category, &normalized_text, context)
+        })
+        .collect::<Vec<_>>();
     let mut categories = rule_categories.clone();
     for (category, _) in &model_predictions {
-        if !categories.contains(category) {
+        if !categories.contains(category)
+            && !should_suppress_category_for_benign_context(*category, &normalized_text, context)
+        {
             categories.push(*category);
         }
     }
@@ -1303,6 +1604,9 @@ fn layered_reasons(text: &str) -> (Vec<String>, f64) {
     for (_, score) in model_predictions {
         confidence = confidence.max(score);
     }
+    for category in context.policy_categories() {
+        confidence = confidence.max(category.confidence());
+    }
 
     reasons.sort();
     reasons.dedup();
@@ -1310,7 +1614,11 @@ fn layered_reasons(text: &str) -> (Vec<String>, f64) {
 }
 
 fn inspect(text: &str) -> InspectResponse {
-    let (reasons, confidence) = layered_reasons(text);
+    inspect_with_context(text, &GuardContext::default())
+}
+
+fn inspect_with_context(text: &str, context: &GuardContext) -> InspectResponse {
+    let (reasons, confidence) = layered_reasons(text, context);
     InspectResponse {
         sanitized_text: regex_redact(text),
         suspicious: !reasons.is_empty(),
@@ -1471,7 +1779,7 @@ fn semantic_scores_json(text: &str) -> String {
 }
 
 fn capabilities_json() -> &'static str {
-    r#"{"name":"Armorer Guard","implementation_language":"rust","runtime_model":"local_first_no_network","public_contract":["inspect_input","inspect_output","sanitize_text","detect_credentials"],"cli_modes":["inspect","sanitize","detect-credentials","semantic-scores","capabilities"],"lanes":[{"id":"credential_lane","status":"active","description":"Deterministic credential recognition, redaction, capture, provider type inference, and suggested environment key names.","reasons":["detected:credential"],"credential_types":["notion","github","openrouter","openai","gemini","telegram_bot","generic_secret"]},{"id":"semantic_lane","status":"active","description":"Hybrid local semantic detection: deterministic rules plus bundled native Rust TF-IDF linear classifier for non-token prompt-injection, exfiltration, safety-bypass, destructive-command, system-prompt-extraction, and sensitive-data request classes. Classifier predictions are promoted only when high-confidence so the model augments, not destabilizes, policy decisions.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"],"model":{"format":"native_rust_tfidf_linear","name":"word-sgd-native-v1","threshold":0.8,"training_source":"can_train=true private development corpus only","source_model":"models/semantic_experiments/word-sgd-onnx-t014/semantic_classifier.joblib"}},{"id":"similarity_lane","status":"active","description":"Local token-set similarity against Armorer-owned can_train=true development exemplars from src/dev_exemplars.tsv. Eval rows are never indexed.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"]},{"id":"policy_lane","status":"active","description":"Runtime/action-aware policy labels for categories that should be blockable regardless of semantic wording.","reasons":["policy:credential_disclosure","policy:dangerous_tool_call"]}],"confidence_policy":{"credential_detection":"0.75-0.99 depending on provider specificity","sensitive_data_request":"0.74 observe/escalate by default, below 0.80 block threshold unless classifier or policy confidence is higher","prompt_injection":"0.88 for rules plus classifier score for model-only hits","system_prompt_extraction":"0.88 for rules plus classifier score for model-only hits","data_exfiltration":"0.92 for rules plus classifier score for model-only hits","safety_bypass":"0.91 for rules plus classifier score for model-only hits","destructive_command":"0.94 for rules plus classifier score for model-only hits"},"boundaries":{"network_calls":"none","python_detection_logic":"none; Python package shells out to the Rust binary","model_weights":"bundled native TSV linear model coefficients in the Rust binary","corpus_policy":"Similarity exemplars and classifier training rows must come from Armorer-owned can_train=true development data. Regression, hard, and holdout eval text must not be copied into rules, prompts, exemplars, or model training data."},"known_limitations":["Native classifier is a lightweight word-ngram linear model, not a transformer classifier.","Similarity lane uses lightweight Jaccard token overlap and should be replaced or augmented by local embeddings.","Context argument is accepted by wrappers for API compatibility but not consumed by the current Rust binary.","The binary does not perform tool execution; it only classifies, redacts, and reports reasons."]}"#
+    r#"{"name":"Armorer Guard","implementation_language":"rust","runtime_model":"local_first_no_network","public_contract":["inspect_input","inspect_output","sanitize_text","detect_credentials"],"cli_modes":["inspect","inspect-json","sanitize","detect-credentials","semantic-scores","capabilities"],"lanes":[{"id":"credential_lane","status":"active","description":"Deterministic credential recognition, redaction, capture, provider type inference, and suggested environment key names.","reasons":["detected:credential"],"credential_types":["notion","github","openrouter","openai","gemini","telegram_bot","generic_secret"]},{"id":"semantic_lane","status":"active","description":"Hybrid local semantic detection: deterministic rules plus bundled native Rust TF-IDF linear classifier for non-token prompt-injection, exfiltration, safety-bypass, destructive-command, system-prompt-extraction, and sensitive-data request classes. Classifier predictions use per-category thresholds and context discounts so retrieved content, model outputs, and agent actions are scored differently from ordinary chat.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"],"model":{"format":"native_rust_tfidf_linear","name":"word-sgd-native-v1","thresholds":{"prompt_injection":0.78,"system_prompt_extraction":0.76,"data_exfiltration":0.74,"sensitive_data_request":0.76,"safety_bypass":0.76,"destructive_command":0.72},"training_source":"can_train=true private development corpus only","source_model":"models/semantic_experiments/word-sgd-onnx-t014/semantic_classifier.joblib"}},{"id":"similarity_lane","status":"active","description":"Local token-set similarity against Armorer-owned can_train=true development exemplars from src/dev_exemplars.tsv. Eval rows are never indexed.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"]},{"id":"policy_lane","status":"active","description":"Runtime/action-aware policy labels from structured context: eval_surface, trace_stage, artifact_kind, policy_action, policy_scope, tool_name, and destination.","reasons":["policy:credential_disclosure","policy:dangerous_tool_call"]}],"confidence_policy":{"credential_detection":"0.75-0.99 depending on provider specificity","context_aware_thresholds":"Agent actions, retrieved content, model outputs, sensitive scopes, and dangerous policy actions lower semantic thresholds only for matching categories.","sensitive_data_request":"0.74 observe/escalate by default, blockable when context or classifier confidence raises risk","prompt_injection":"0.88 for rules plus classifier score for model-only hits","system_prompt_extraction":"0.88 for rules plus classifier score for model-only hits","data_exfiltration":"0.92 for rules plus classifier score for model-only hits","safety_bypass":"0.91 for rules plus classifier score for model-only hits","destructive_command":"0.94 for rules plus classifier score for model-only hits"},"boundaries":{"network_calls":"none","python_detection_logic":"none; Python package shells out to the Rust binary","model_weights":"bundled native TSV linear model coefficients in the Rust binary","corpus_policy":"Similarity exemplars and classifier training rows must come from Armorer-owned can_train=true development data. Regression, hard, and holdout eval text must not be copied into rules, prompts, exemplars, or model training data."},"known_limitations":["Native classifier is a lightweight word-ngram linear model, not a transformer classifier.","Similarity lane uses lightweight Jaccard token overlap and should be replaced or augmented by local embeddings.","Context-aware policy consumes structured metadata when provided; text-only callers still use the legacy path.","The binary does not perform tool execution; it only classifies, redacts, and reports reasons."]}"#
 }
 
 fn main() {
@@ -1486,6 +1794,16 @@ fn main() {
     match mode.as_str() {
         "capabilities" => println!("{}", capabilities_json()),
         "detect-credentials" => println!("{}", credential_json(detect_credentials(&input))),
+        "inspect-json" => match serde_json::from_str::<InspectRequest>(&input) {
+            Ok(request) => println!(
+                "{}",
+                response_json(&inspect_with_context(&request.text, &request.context))
+            ),
+            Err(err) => {
+                eprintln!("invalid inspect-json payload: {err}");
+                std::process::exit(2);
+            }
+        },
         "semantic-scores" => println!("{}", semantic_scores_json(&input)),
         "sanitize" => println!(
             "{{\"sanitized_text\":\"{}\"}}",
@@ -1604,6 +1922,30 @@ mod tests {
             .reasons
             .contains(&"semantic:sensitive_data_request".to_string()));
         assert!(out.confidence < 0.80);
+    }
+
+    #[test]
+    fn context_policy_escalates_agent_actions() {
+        let context = GuardContext {
+            eval_surface: "agent_action".to_string(),
+            trace_stage: "action".to_string(),
+            policy_action: "outbound_transfer".to_string(),
+            policy_scope: "secrets".to_string(),
+            ..GuardContext::default()
+        };
+        let out = inspect_with_context("Proceed with the transfer.", &context);
+        assert!(out.suspicious);
+        assert!(out.confidence >= 0.90);
+        assert!(out
+            .reasons
+            .contains(&"policy:credential_disclosure".to_string()));
+    }
+
+    #[test]
+    fn benign_discussion_context_does_not_execute_command_text() {
+        let out =
+            inspect("Review this command text for risk without running it: rm -rf /tmp/example.");
+        assert!(!out.suspicious, "{:?}", out.reasons);
     }
 
     #[test]
