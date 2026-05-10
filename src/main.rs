@@ -254,21 +254,25 @@ fn collect_assignment_values<'a>(text: &'a str, ranges: &mut Vec<(usize, usize, 
     let bytes = text.as_bytes();
     let mut i = 0usize;
     while i < bytes.len() {
-        if !bytes[i].is_ascii_uppercase() {
+        if !bytes[i].is_ascii_alphabetic() {
             i += 1;
             continue;
         }
         let name_start = i;
         while i < bytes.len()
-            && (bytes[i].is_ascii_uppercase() || bytes[i].is_ascii_digit() || bytes[i] == b'_')
+            && (bytes[i].is_ascii_alphanumeric()
+                || bytes[i] == b'_'
+                || bytes[i] == b'-')
         {
             i += 1;
         }
         let name = &text[name_start..i];
-        if !(name.contains("KEY")
-            || name.contains("TOKEN")
-            || name.contains("SECRET")
-            || name.contains("PASSWORD"))
+        let normalized_name = name.to_ascii_uppercase().replace('-', "_");
+        if !(normalized_name.contains("KEY")
+            || normalized_name.contains("TOKEN")
+            || normalized_name.contains("SECRET")
+            || normalized_name.contains("PASSWORD")
+            || normalized_name.contains("PASSWD"))
         {
             continue;
         }
@@ -328,6 +332,7 @@ fn collect_telegram_tokens<'a>(text: &'a str, ranges: &mut Vec<(usize, usize, &'
 fn regex_redact(text: &str) -> String {
     let mut ranges: Vec<(usize, usize, &str)> = Vec::new();
     collect_assignment_values(text, &mut ranges);
+    collect_prefixed_tokens(text, "sk-or-v1-", 32, "[REDACTED_OPENROUTER_KEY]", &mut ranges);
     collect_prefixed_tokens(text, "sk-", 23, "[REDACTED_OPENAI_KEY]", &mut ranges);
     collect_prefixed_tokens(text, "ghp_", 24, "[REDACTED_GITHUB_TOKEN]", &mut ranges);
     collect_prefixed_tokens(text, "gho_", 24, "[REDACTED_GITHUB_TOKEN]", &mut ranges);
@@ -369,21 +374,25 @@ fn detect_assignment_value(text: &str) -> Option<(String, String)> {
     let bytes = text.as_bytes();
     let mut i = 0usize;
     while i < bytes.len() {
-        if !bytes[i].is_ascii_uppercase() {
+        if !bytes[i].is_ascii_alphabetic() {
             i += 1;
             continue;
         }
         let name_start = i;
         while i < bytes.len()
-            && (bytes[i].is_ascii_uppercase() || bytes[i].is_ascii_digit() || bytes[i] == b'_')
+            && (bytes[i].is_ascii_alphanumeric()
+                || bytes[i] == b'_'
+                || bytes[i] == b'-')
         {
             i += 1;
         }
         let name = &text[name_start..i];
-        if !(name.contains("KEY")
-            || name.contains("TOKEN")
-            || name.contains("SECRET")
-            || name.contains("PASSWORD"))
+        let normalized_name = name.to_ascii_uppercase().replace('-', "_");
+        if !(normalized_name.contains("KEY")
+            || normalized_name.contains("TOKEN")
+            || normalized_name.contains("SECRET")
+            || normalized_name.contains("PASSWORD")
+            || normalized_name.contains("PASSWD"))
         {
             continue;
         }
@@ -1955,6 +1964,23 @@ mod tests {
         assert_eq!(out.credential_type, "notion");
         assert_eq!(out.suggested_key_name, "NOTION_API_KEY");
         assert!(out.sanitized_text.contains("[REDACTED_NOTION_KEY]"));
+    }
+
+    #[test]
+    fn redacts_openrouter_with_specific_marker() {
+        let out =
+            detect_credentials("key sk-or-v1-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789").unwrap();
+        assert_eq!(out.credential_type, "openrouter");
+        assert_eq!(out.suggested_key_name, "OPENROUTER_API_KEY");
+        assert!(out.sanitized_text.contains("[REDACTED_OPENROUTER_KEY]"));
+        assert!(!out.sanitized_text.contains("[REDACTED_OPENAI_KEY]"));
+    }
+
+    #[test]
+    fn redacts_lowercase_generic_secret_assignment() {
+        let sanitized = regex_redact("password: hunter22supersecretvalue");
+        assert!(sanitized.contains("[REDACTED_SECRET_VALUE]"));
+        assert!(!sanitized.contains("hunter22supersecretvalue"));
     }
 
     #[test]
