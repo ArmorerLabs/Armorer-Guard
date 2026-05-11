@@ -1,7 +1,7 @@
 # Armorer Guard Architecture
 
-Armorer Guard is the private, local-first security scanner used by public
-Armorer. The implementation boundary is deliberately simple:
+Armorer Guard is a public source-available, local-first security scanner used by
+agent runtimes. The implementation boundary is deliberately simple:
 
 - Rust owns all detection behavior.
 - Python owns packaging compatibility only.
@@ -93,14 +93,14 @@ destructive operations, and bypassing guard controls.
 
 ## Why Rust
 
-Guard needs to be small, local, portable, and easy to ship as a closed binary
-while Armorer stays open source. Rust gives us:
+Guard needs to be small, local, portable, and easy to ship as a single binary.
+Rust gives us:
 
 - single binary distribution
 - predictable local execution
 - no Python scanner dependency leakage
 - straightforward cross-platform CI
-- a clear proprietary boundary
+- a clear scanner boundary
 
 ## Future Scanner Work
 

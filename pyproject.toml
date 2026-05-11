@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,8 @@ version = "0.2.1"
 description = "Binary scanner package for Armorer Guard."
 readme = "README.md"
 requires-python = ">=3.10"
-license = "LicenseRef-Proprietary"
+license = "LicenseRef-PolyForm-Noncommercial-1.0.0"
+license-files = ["LICENSE.md", "NOTICE.md"]
 authors = [{ name = "Armorer Labs", email = "dev@armorerlabs.com" }]
 classifiers = [
     "Development Status :: 3 - Alpha",

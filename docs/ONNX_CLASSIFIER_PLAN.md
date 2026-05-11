@@ -280,7 +280,7 @@ Interpretation:
 ## Open Questions
 
 - Which small model architecture gives the best latency/recall tradeoff?
-- Should tokenizer assets be bundled into the closed binary package or loaded
+- Should tokenizer assets be bundled into the release binary package or loaded
   from a model directory?
 - Should ONNX be enabled for all platforms immediately or staged per platform?
 - How should we expose per-lane scores without changing the current public API?

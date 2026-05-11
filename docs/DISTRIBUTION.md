@@ -1,20 +1,16 @@
 # Armorer Guard Distribution
 
-Armorer Guard is private. Public Armorer should consume it as a binary artifact,
-not as source.
-
-## Goal
-
-Users should be able to install public Armorer and receive Guard functionality
-without seeing Guard source code.
+Armorer Guard is public source-available software under the PolyForm
+Noncommercial License 1.0.0. Commercial use requires a separate paid commercial
+license from Armorer Labs.
 
 ## Package Shape
 
 The package contains:
 
-- a prebuilt `armorer-guard` binary
+- a Rust `armorer-guard` binary
 - a thin Python wrapper
-- no Rust source in the wheel
+- a bundled native semantic classifier TSV for local/no-network runtime builds
 - no detector implementation in Python
 
 The wrapper exists only to support:
@@ -25,18 +21,36 @@ The wrapper exists only to support:
 - `armorer_guard.capabilities()`
 - `armorer-guard-python`
 
-## Binary Discovery In Public Armorer
+## Binary Discovery
 
-Public Armorer should discover Guard in this order:
+Downstream consumers should discover Guard in this order:
 
 1. `ARMORER_GUARD_BIN`
-2. Armorer-managed install path such as `~/.armorer/bin/armorer-guard`
+2. installer-managed path such as `~/.armorer/bin/armorer-guard`
 3. `PATH`
-4. binary-only Python package import, when installed
-5. public built-in fallback, only when Guard is unavailable
+4. binary-backed Python package import, when installed
+5. fallback scanner, only when Guard is unavailable
 
-The public fallback should remain visibly weaker and should report itself as a
-fallback. It should never pretend to be the private Guard.
+Fallbacks should remain visibly weaker and should report themselves as
+fallbacks. They should never pretend to be the Rust Guard binary.
+
+## Model Artifacts
+
+The runtime build keeps `src/semantic_classifier_native.tsv` in this repository
+so `cargo build` does not need network access.
+
+Full reproducibility artifacts live in the public Hugging Face model repository:
+
+https://huggingface.co/armorer-labs/armorer-guard-semantic-classifier
+
+Use:
+
+```bash
+scripts/fetch_model_artifacts.sh
+```
+
+to download the public ONNX, joblib, labels, metrics, and native TSV artifacts
+into a local ignored `models/` tree.
 
 ## CI Requirements
 
@@ -50,6 +64,7 @@ Minimum release checks:
 
 ```bash
 cargo test --locked
+cargo clippy -- -D warnings
 cargo build --release --locked
 python -m build --wheel
 python -m pip install dist/*.whl
@@ -60,19 +75,18 @@ python -c "import armorer_guard; print(armorer_guard.capabilities())"
 
 Do:
 
-- publish binary-only wheels/artifacts
+- publish binaries/wheels with clear noncommercial licensing
 - sign or checksum release artifacts
-- keep source private
-- verify that public Armorer can import and run Guard after install
+- verify that downstream callers can import and run Guard after install
 - verify `armorer-guard capabilities`
+- keep full model artifacts in Hugging Face, not in the code repository
 
 Do not:
 
-- publish this repository
-- publish `src/main.rs`
-- copy detector logic into public Armorer
+- copy detector logic into downstream wrappers
 - copy detector logic into the Python wrapper
 - bundle unlicensed third-party prompt corpora
+- train from regression, hard, or holdout eval rows
 
 ## Capability Verification
 
@@ -89,6 +103,3 @@ Expected fields:
 - `lanes`
 - `boundaries.python_detection_logic`
 - `known_limitations`
-
-This is the fastest way to confirm that a user has the private binary-backed
-Guard and not only the public fallback.

@@ -34,9 +34,17 @@ def _binary_name() -> str:
 
 def binary_path() -> Path:
     path = Path(__file__).resolve().parent / "bin" / _binary_name()
-    if not path.exists():
-        raise RuntimeError(f"Armorer Guard binary is missing from package: {path}")
-    return path
+    if path.exists():
+        return path
+
+    source_tree_binary = Path(__file__).resolve().parents[1] / "target" / "release" / _binary_name()
+    if source_tree_binary.exists():
+        return source_tree_binary
+
+    raise RuntimeError(
+        "Armorer Guard binary is missing. Install a wheel that includes the binary "
+        "or run `cargo build --release` from the source checkout."
+    )
 
 
 def _run(mode: str, text: str, context: Any = None) -> Any:

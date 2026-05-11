@@ -331,7 +331,6 @@ fn collect_telegram_tokens<'a>(text: &'a str, ranges: &mut Vec<(usize, usize, &'
 
 fn regex_redact(text: &str) -> String {
     let mut ranges: Vec<(usize, usize, &str)> = Vec::new();
-    collect_assignment_values(text, &mut ranges);
     collect_prefixed_tokens(text, "sk-or-v1-", 32, "[REDACTED_OPENROUTER_KEY]", &mut ranges);
     collect_prefixed_tokens(text, "sk-", 23, "[REDACTED_OPENAI_KEY]", &mut ranges);
     collect_prefixed_tokens(text, "ghp_", 24, "[REDACTED_GITHUB_TOKEN]", &mut ranges);
@@ -343,6 +342,7 @@ fn regex_redact(text: &str) -> String {
     collect_prefixed_tokens(text, "aiza", 24, "[REDACTED_GEMINI_KEY]", &mut ranges);
     collect_prefixed_tokens(text, "eyj", 45, "[REDACTED_JWT]", &mut ranges);
     collect_telegram_tokens(text, &mut ranges);
+    collect_assignment_values(text, &mut ranges);
     replace_ranges(text, &ranges)
 }
 
@@ -680,7 +680,7 @@ fn continuous_hex_decoded_fragments(text: &str) -> Vec<String> {
 }
 
 fn decode_continuous_hex(value: &str) -> Option<String> {
-    if value.len() < 16 || value.len() % 2 != 0 {
+    if value.len() < 16 || !value.len().is_multiple_of(2) {
         return None;
     }
     let bytes = value.as_bytes();

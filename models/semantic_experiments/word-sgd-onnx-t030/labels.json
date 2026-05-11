@@ -1,8 +1,0 @@
-[
-  "prompt_injection",
-  "system_prompt_extraction",
-  "data_exfiltration",
-  "sensitive_data_request",
-  "safety_bypass",
-  "destructive_command"
-]
