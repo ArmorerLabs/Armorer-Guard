@@ -106,6 +106,8 @@ also includes credential detection, policy checks, normalization, and JSON IO.
 
 See [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) for the benchmark philosophy,
 local smoke-bench commands, and agent-boundary evaluation notes.
+See [`docs/RESULTS.md`](docs/RESULTS.md) for the current classifier,
+Promptfoo-derived red-team, and hard agent-boundary snapshots.
 
 ## Detection Lanes
 
@@ -304,4 +306,5 @@ Commercial licensing: dev@armorerlabs.com
 - [Distribution](docs/DISTRIBUTION.md)
 - [Integration examples](examples/README.md)
 - [Launch kit](docs/LAUNCH_KIT.md)
+- [Results](docs/RESULTS.md)
 - [Commercial license](COMMERCIAL_LICENSE.md)

@@ -19,6 +19,9 @@ These figures describe the exported native Rust semantic classifier. Full
 scanner latency also includes credential detection, policy checks, text
 normalization, and JSON IO.
 
+For current Promptfoo-derived red-team and hard agent-boundary snapshots, see
+[`docs/RESULTS.md`](RESULTS.md).
+
 ## What We Measure
 
 Armorer Guard reports risks across the categories agent builders usually need
@@ -70,4 +73,3 @@ Agent guardrails should be measured at multiple boundaries:
 Prompt-only refusal scores are not enough for agents. A dangerous instruction can
 be transformed into a normal-looking email, shell command, API argument, browser
 step, or memory write by the time it reaches the action layer.
-
