@@ -259,7 +259,10 @@ Commercial licensing: dev@armorerlabs.com
 ## Links
 
 - [Model artifacts](https://huggingface.co/armorer-labs/armorer-guard-semantic-classifier)
+- [Interactive Hugging Face demo](https://huggingface.co/spaces/armorer-labs/armorer-guard-demo)
+- [Agent safety and prompt injection collection](https://huggingface.co/collections/armorer-labs/agent-safety-and-prompt-injection-guardrails-6a01f79549c39761e62a43d5)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Capabilities](docs/CAPABILITIES.md)
 - [Distribution](docs/DISTRIBUTION.md)
+- [Launch kit](docs/LAUNCH_KIT.md)
 - [Commercial license](COMMERCIAL_LICENSE.md)
