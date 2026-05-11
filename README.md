@@ -22,6 +22,8 @@ or build the local Rust scanner below.
 
 ---
 
+![Armorer Guard demo](docs/assets/armorer-guard-demo.gif)
+
 Armorer Guard is a tiny, local-first scanner built for the hot path of agent
 runtimes. It redacts secrets, detects prompt injection, flags exfiltration,
 identifies dangerous tool calls, and returns machine-readable reasons your agent

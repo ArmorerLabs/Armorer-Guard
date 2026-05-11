@@ -27,6 +27,7 @@ The Python package is intentionally thin and shells out to the same Rust binary.
 Repo: https://github.com/ArmorerLabs/Armorer-Guard
 Demo: https://huggingface.co/spaces/armorer-labs/armorer-guard-demo
 Benchmarks: https://github.com/ArmorerLabs/Armorer-Guard/blob/main/docs/BENCHMARKS.md
+Demo GIF: https://raw.githubusercontent.com/ArmorerLabs/Armorer-Guard/main/docs/assets/armorer-guard-demo.gif
 ```
 
 ## OWASP GenAI / LLM Security Communities
@@ -71,7 +72,7 @@ Armorer Guard is a local Rust scanner for AI-agent runtimes. It inspects prompts
 Repo: https://github.com/ArmorerLabs/Armorer-Guard
 Demo: https://huggingface.co/spaces/armorer-labs/armorer-guard-demo
 Benchmarks: https://github.com/ArmorerLabs/Armorer-Guard/blob/main/docs/BENCHMARKS.md
+Demo GIF: https://raw.githubusercontent.com/ArmorerLabs/Armorer-Guard/main/docs/assets/armorer-guard-demo.gif
 
 The core is Rust-native, local-first, and includes Python, LangChain, CrewAI, MCP, Node, NanoClaw, and CI examples.
 ```
-
