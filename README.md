@@ -307,4 +307,5 @@ Commercial licensing: dev@armorerlabs.com
 - [Integration examples](examples/README.md)
 - [Launch kit](docs/LAUNCH_KIT.md)
 - [Results](docs/RESULTS.md)
+- [Technical launch post](docs/TECHNICAL_LAUNCH_POST.md)
 - [Commercial license](COMMERCIAL_LICENSE.md)
