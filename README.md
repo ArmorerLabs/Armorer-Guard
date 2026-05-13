@@ -104,6 +104,10 @@ memory writes.
 | NanoClaw side-by-side demo | [`examples/nanoclaw.md`](examples/nanoclaw.md) |
 | CI smoke test | [`examples/github-action.yml`](examples/github-action.yml) |
 
+Need fixtures first? Start with [`docs/ATTACK_EXAMPLES.md`](docs/ATTACK_EXAMPLES.md)
+for copy-paste prompt injection, retrieval, tool-call, memory, exfiltration, and
+credential-leak examples.
+
 ## Play With It
 
 The fastest way to see Armorer Guard work is the public Hugging Face Space:
@@ -150,6 +154,8 @@ See [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) for the benchmark philosophy,
 local smoke-bench commands, and agent-boundary evaluation notes.
 See [`docs/RESULTS.md`](docs/RESULTS.md) for the current classifier,
 Promptfoo-derived red-team, and hard agent-boundary snapshots.
+See [`docs/ATTACK_EXAMPLES.md`](docs/ATTACK_EXAMPLES.md) for runnable fixtures
+you can paste into the CLI, browser demo, NanoClaw, or CI.
 
 ## Detection Lanes
 
