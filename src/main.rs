@@ -260,9 +260,7 @@ fn collect_assignment_values<'a>(text: &'a str, ranges: &mut Vec<(usize, usize, 
         }
         let name_start = i;
         while i < bytes.len()
-            && (bytes[i].is_ascii_alphanumeric()
-                || bytes[i] == b'_'
-                || bytes[i] == b'-')
+            && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_' || bytes[i] == b'-')
         {
             i += 1;
         }
@@ -331,7 +329,13 @@ fn collect_telegram_tokens<'a>(text: &'a str, ranges: &mut Vec<(usize, usize, &'
 
 fn regex_redact(text: &str) -> String {
     let mut ranges: Vec<(usize, usize, &str)> = Vec::new();
-    collect_prefixed_tokens(text, "sk-or-v1-", 32, "[REDACTED_OPENROUTER_KEY]", &mut ranges);
+    collect_prefixed_tokens(
+        text,
+        "sk-or-v1-",
+        32,
+        "[REDACTED_OPENROUTER_KEY]",
+        &mut ranges,
+    );
     collect_prefixed_tokens(text, "sk-", 23, "[REDACTED_OPENAI_KEY]", &mut ranges);
     collect_prefixed_tokens(text, "ghp_", 24, "[REDACTED_GITHUB_TOKEN]", &mut ranges);
     collect_prefixed_tokens(text, "gho_", 24, "[REDACTED_GITHUB_TOKEN]", &mut ranges);
@@ -380,9 +384,7 @@ fn detect_assignment_value(text: &str) -> Option<(String, String)> {
         }
         let name_start = i;
         while i < bytes.len()
-            && (bytes[i].is_ascii_alphanumeric()
-                || bytes[i] == b'_'
-                || bytes[i] == b'-')
+            && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_' || bytes[i] == b'-')
         {
             i += 1;
         }
@@ -1968,8 +1970,10 @@ mod tests {
 
     #[test]
     fn redacts_openrouter_with_specific_marker() {
-        let out =
-            detect_credentials("key sk-or-v1-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789").unwrap();
+        let out = detect_credentials(
+            "key sk-or-v1-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+        )
+        .unwrap();
         assert_eq!(out.credential_type, "openrouter");
         assert_eq!(out.suggested_key_name, "OPENROUTER_API_KEY");
         assert!(out.sanitized_text.contains("[REDACTED_OPENROUTER_KEY]"));
