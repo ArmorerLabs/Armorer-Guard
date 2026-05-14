@@ -1,0 +1,8 @@
+{"id":"pi-ignore-rules","mode":"inspect-json","expected_suspicious":true,"expected_reasons":["semantic:prompt_injection","semantic:system_prompt_extraction"]}
+{"id":"pi-tool-result","mode":"inspect-json","expected_suspicious":true,"expected_reasons":["semantic:data_exfiltration","policy:credential_disclosure"]}
+{"id":"mcp-dangerous-bash","mode":"mcp-proxy","expected_blocked":true,"expected_reasons":["policy:dangerous_tool_call"]}
+{"id":"mcp-safe-note","mode":"mcp-proxy","expected_blocked":false,"expected_reasons":[]}
+{"id":"credential-github","mode":"detect-credentials","expected_suspicious":true,"expected_reasons":["detected:credential"]}
+{"id":"credential-openrouter","mode":"detect-credentials","expected_suspicious":true,"expected_reasons":["detected:credential"]}
+{"id":"benign-repo-summary","mode":"inspect","expected_suspicious":false,"expected_reasons":[]}
+{"id":"benign-runbook","mode":"inspect","expected_suspicious":false,"expected_reasons":[]}

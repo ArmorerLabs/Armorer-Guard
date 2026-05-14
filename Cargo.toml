@@ -1,6 +1,6 @@
 [package]
 name = "armorer-guard"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 description = "Fast local Rust scanner for AI-agent prompt injection, credential leaks, exfiltration, and risky tool calls."
 readme = "README.md"
@@ -15,6 +15,29 @@ include = [
     "/LICENSE.md",
     "/NOTICE.md",
     "/README.md",
+    "/docs/AGENT_BOUNDARIES.md",
+    "/docs/ARCHITECTURE.md",
+    "/docs/ATTACK_EXAMPLES.md",
+    "/docs/BENCHMARKS.md",
+    "/docs/CAPABILITIES.md",
+    "/docs/COMPARISON.md",
+    "/docs/HF_DEMO_RELEASE_CHECKLIST.md",
+    "/docs/MARKETING_PLAYBOOK.md",
+    "/docs/RESULTS.md",
+    "/docs/SECURITY_MODEL.md",
+    "/docs/assets/**",
+    "/examples/README.md",
+    "/examples/claude-code-hook.md",
+    "/examples/crewai_guard.py",
+    "/examples/cursor-mcp.md",
+    "/examples/github-action.yml",
+    "/examples/langchain_guard.py",
+    "/examples/mcp_proxy.md",
+    "/examples/mcp_tool_gate.py",
+    "/examples/nanoclaw.md",
+    "/examples/node_middleware.mjs",
+    "/fixtures/*.jsonl",
+    "/scripts/smoke.sh",
     "/src/**",
 ]
 

@@ -18,7 +18,10 @@ fast local risk signal.
 | `langchain_guard.py` | Wrap LangChain retrieved content and tool arguments |
 | `crewai_guard.py` | Guard a CrewAI tool before execution |
 | `node_middleware.mjs` | Use the Rust binary from Node/Express or Vercel-style handlers |
+| `mcp_proxy.md` | Wrap a line-delimited stdio MCP server with the Rust proxy |
 | `mcp_tool_gate.py` | Gate MCP tool calls before forwarding them to a server |
+| `claude-code-hook.md` | Pre-tool-call hook pattern for Claude Code-style workflows |
+| `cursor-mcp.md` | Cursor and Windsurf MCP wrapper snippets |
 | `nanoclaw.md` | Run NanoClaw with and without Armorer Guard side by side |
 | `github-action.yml` | CI smoke test for prompt/tool-call fixtures |
 
@@ -39,3 +42,8 @@ python3 -m pip install -e .
 
 Node examples call the Rust binary directly and do not require an npm package.
 
+The MCP proxy is available directly from the Rust CLI:
+
+```bash
+armorer-guard mcp-proxy -- npx some-mcp-server
+```

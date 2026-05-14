@@ -19,4 +19,9 @@ jobs:
             | tee /tmp/armorer-guard.json
           grep -q '"suspicious":true' /tmp/armorer-guard.json
           grep -q 'semantic:prompt_injection' /tmp/armorer-guard.json
-
+      - name: MCP tool-call smoke test
+        run: |
+          printf '%s' '{"text":"{\"command\":\"rm -rf /\"}","context":{"eval_surface":"tool_call_args","trace_stage":"action","policy_scope":"mcp","tool_name":"Bash"}}' \
+            | target/release/armorer-guard inspect-json \
+            | tee /tmp/armorer-guard-mcp.json
+          grep -q 'policy:dangerous_tool_call' /tmp/armorer-guard-mcp.json

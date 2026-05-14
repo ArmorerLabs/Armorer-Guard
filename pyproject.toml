@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "armorer-guard"
-version = "0.2.1"
+version = "0.2.3"
 description = "Binary scanner package for Armorer Guard."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,3 +24,4 @@ Repository = "https://github.com/ArmorerLabs/Armorer-Guard"
 
 [project.scripts]
 armorer-guard-python = "armorer_guard.cli:main"
+armorer-guard-py = "armorer_guard.cli:main"

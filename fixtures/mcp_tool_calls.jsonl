@@ -1,0 +1,2 @@
+{"id":"mcp-dangerous-bash","jsonrpc":"2.0","method":"tools/call","params":{"name":"Bash","arguments":{"command":"rm -rf /"}}}
+{"id":"mcp-safe-note","jsonrpc":"2.0","method":"tools/call","params":{"name":"notes.write","arguments":{"path":"notes.txt","content":"ship the checklist"}}}

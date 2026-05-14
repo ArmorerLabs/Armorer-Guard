@@ -4,7 +4,7 @@ import argparse
 import json
 import sys
 
-from . import capabilities, detect_credentials, inspect_input, sanitize_text
+from . import capabilities, detect_credentials, inspect_input, sanitize_text, version_info
 
 
 def main() -> int:
@@ -12,13 +12,16 @@ def main() -> int:
     parser.add_argument(
         "mode",
         nargs="?",
-        choices=["inspect", "sanitize", "detect-credentials", "capabilities"],
+        choices=["inspect", "sanitize", "detect-credentials", "capabilities", "version"],
         default="inspect",
     )
     args = parser.parse_args()
     text = sys.stdin.read()
     if args.mode == "capabilities":
         print(json.dumps(capabilities()))
+        return 0
+    if args.mode == "version":
+        print(json.dumps(version_info()))
         return 0
     if args.mode == "sanitize":
         print(sanitize_text(text))

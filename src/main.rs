@@ -1,15 +1,19 @@
 use std::collections::HashMap;
 use std::fs::{self, OpenOptions};
-use std::io::{self, Read, Write};
+use std::io::{self, BufRead, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 use std::sync::OnceLock;
+use std::thread;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use sha2::{Digest, Sha256};
 
 const MODEL_VERSION: &str = "word-sgd-native-v1";
 const LEARNING_VERSION: &str = "local-learning-v1";
+const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, PartialEq)]
 struct InspectResponse {
@@ -2239,8 +2243,263 @@ fn semantic_scores_json(text: &str) -> String {
     )
 }
 
+fn version_json() -> String {
+    format!(
+        "{{\"name\":\"armorer-guard\",\"version\":\"{}\",\"model_version\":\"{}\",\"learning_version\":\"{}\"}}",
+        json_escape(PACKAGE_VERSION),
+        json_escape(MODEL_VERSION),
+        json_escape(LEARNING_VERSION)
+    )
+}
+
+#[derive(Debug, PartialEq)]
+struct McpProxyAction {
+    forward_line: Option<String>,
+    response_line: Option<String>,
+    audit_line: Option<String>,
+}
+
+fn mcp_proxy_context(tool_name: &str) -> GuardContext {
+    GuardContext {
+        eval_surface: "tool_call_args".to_string(),
+        trace_stage: "action".to_string(),
+        policy_scope: "mcp".to_string(),
+        tool_name: tool_name.to_string(),
+        ..GuardContext::default()
+    }
+}
+
+fn mcp_tool_call_parts(message: &Value) -> Option<(String, String)> {
+    if message.get("method").and_then(Value::as_str) != Some("tools/call") {
+        return None;
+    }
+    let params = message.get("params")?;
+    let tool_name = params
+        .get("name")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let arguments = params
+        .get("arguments")
+        .map(|value| match value {
+            Value::String(text) => text.clone(),
+            _ => serde_json::to_string(value).unwrap_or_else(|_| "{}".to_string()),
+        })
+        .unwrap_or_else(|| "{}".to_string());
+    Some((tool_name, arguments))
+}
+
+fn mcp_proxy_block_reason(reason: &str) -> bool {
+    matches!(
+        reason,
+        "detected:credential"
+            | "policy:credential_disclosure"
+            | "policy:dangerous_tool_call"
+            | "semantic:data_exfiltration"
+            | "semantic:prompt_injection"
+            | "learning:local_block_match"
+    )
+}
+
+fn mcp_proxy_should_block(response: &InspectResponse) -> bool {
+    response
+        .reasons
+        .iter()
+        .any(|reason| mcp_proxy_block_reason(reason))
+}
+
+fn mcp_proxy_error_response(message: &Value, response: &InspectResponse) -> String {
+    let id = message.get("id").cloned().unwrap_or(Value::Null);
+    let jsonrpc = message
+        .get("jsonrpc")
+        .and_then(Value::as_str)
+        .unwrap_or("2.0");
+    serde_json::json!({
+        "jsonrpc": jsonrpc,
+        "id": id,
+        "error": {
+            "code": -32001,
+            "message": "Armorer Guard blocked unsafe MCP tool call",
+            "data": {
+                "reasons": response.reasons,
+                "confidence": response.confidence,
+                "sanitized_text": response.sanitized_text,
+                "scan_id": response.scan_id
+            }
+        }
+    })
+    .to_string()
+}
+
+fn mcp_proxy_audit_line(tool_name: &str, action: &str, response: &InspectResponse) -> String {
+    serde_json::json!({
+        "schema_version": "mcp_proxy_audit.v1",
+        "timestamp_unix": unix_timestamp_seconds(),
+        "tool_name": tool_name,
+        "action": action,
+        "scan_id": response.scan_id,
+        "reasons": response.reasons,
+        "confidence": response.confidence
+    })
+    .to_string()
+}
+
+fn mcp_proxy_handle_line(line: &str) -> McpProxyAction {
+    let trimmed = line.trim_end_matches(['\n', '\r']);
+    let Ok(message) = serde_json::from_str::<Value>(trimmed) else {
+        return McpProxyAction {
+            forward_line: Some(line.to_string()),
+            response_line: None,
+            audit_line: None,
+        };
+    };
+    let Some((tool_name, arguments)) = mcp_tool_call_parts(&message) else {
+        return McpProxyAction {
+            forward_line: Some(line.to_string()),
+            response_line: None,
+            audit_line: None,
+        };
+    };
+    let context = mcp_proxy_context(&tool_name);
+    let response = inspect_with_context(&arguments, &context);
+    if mcp_proxy_should_block(&response) {
+        return McpProxyAction {
+            forward_line: None,
+            response_line: Some(mcp_proxy_error_response(&message, &response)),
+            audit_line: Some(mcp_proxy_audit_line(&tool_name, "blocked", &response)),
+        };
+    }
+    McpProxyAction {
+        forward_line: Some(line.to_string()),
+        response_line: None,
+        audit_line: Some(mcp_proxy_audit_line(&tool_name, "allowed", &response)),
+    }
+}
+
+fn parse_mcp_proxy_args(args: &[String]) -> Result<(Option<PathBuf>, Vec<String>), String> {
+    let mut audit_log = None;
+    let mut command = Vec::new();
+    let mut index = 0usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--audit-log" => {
+                index += 1;
+                let Some(path) = args.get(index) else {
+                    return Err("--audit-log requires a path".to_string());
+                };
+                audit_log = Some(PathBuf::from(path));
+            }
+            "--" => {
+                command.extend(args[index + 1..].iter().cloned());
+                break;
+            }
+            value if command.is_empty() && value.starts_with("--") => {
+                return Err(format!("unknown mcp-proxy option: {value}"));
+            }
+            _ => {
+                command.extend(args[index..].iter().cloned());
+                break;
+            }
+        }
+        index += 1;
+    }
+    if command.is_empty() {
+        return Err(
+            "usage: armorer-guard mcp-proxy [--audit-log path] -- <server command>".to_string(),
+        );
+    }
+    Ok((audit_log, command))
+}
+
+fn run_mcp_proxy(args: &[String]) -> Result<i32, String> {
+    let (audit_log, command) = parse_mcp_proxy_args(args)?;
+    let mut child = Command::new(&command[0])
+        .args(&command[1..])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .map_err(|err| format!("failed to launch MCP server {}: {err}", command[0]))?;
+
+    let child_stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| "failed to capture MCP server stdout".to_string())?;
+    let stdout_thread = thread::spawn(move || -> io::Result<()> {
+        let mut reader = BufReader::new(child_stdout);
+        let mut line = String::new();
+        loop {
+            line.clear();
+            let bytes = reader.read_line(&mut line)?;
+            if bytes == 0 {
+                break;
+            }
+            let mut stdout = io::stdout().lock();
+            stdout.write_all(line.as_bytes())?;
+            stdout.flush()?;
+        }
+        Ok(())
+    });
+
+    let mut child_stdin = child
+        .stdin
+        .take()
+        .ok_or_else(|| "failed to capture MCP server stdin".to_string())?;
+    let stdin = io::stdin();
+    let mut reader = BufReader::new(stdin.lock());
+    let mut line = String::new();
+    loop {
+        line.clear();
+        let bytes = reader
+            .read_line(&mut line)
+            .map_err(|err| format!("failed to read proxy stdin: {err}"))?;
+        if bytes == 0 {
+            break;
+        }
+        let action = mcp_proxy_handle_line(&line);
+        if let (Some(path), Some(audit_line)) = (&audit_log, action.audit_line.as_deref()) {
+            append_jsonl(path, audit_line)?;
+        }
+        if let Some(response_line) = action.response_line {
+            let mut stdout = io::stdout().lock();
+            stdout
+                .write_all(response_line.as_bytes())
+                .map_err(|err| format!("failed to write proxy response: {err}"))?;
+            stdout
+                .write_all(b"\n")
+                .map_err(|err| format!("failed to write proxy response: {err}"))?;
+            stdout
+                .flush()
+                .map_err(|err| format!("failed to flush proxy response: {err}"))?;
+        }
+        if let Some(forward_line) = action.forward_line {
+            child_stdin
+                .write_all(forward_line.as_bytes())
+                .map_err(|err| format!("failed to write MCP server stdin: {err}"))?;
+            if !forward_line.ends_with('\n') {
+                child_stdin
+                    .write_all(b"\n")
+                    .map_err(|err| format!("failed to write MCP server stdin: {err}"))?;
+            }
+            child_stdin
+                .flush()
+                .map_err(|err| format!("failed to flush MCP server stdin: {err}"))?;
+        }
+    }
+    drop(child_stdin);
+    let status = child
+        .wait()
+        .map_err(|err| format!("failed to wait for MCP server: {err}"))?;
+    match stdout_thread.join() {
+        Ok(Ok(())) => {}
+        Ok(Err(err)) => return Err(format!("failed to relay MCP server stdout: {err}")),
+        Err(_) => return Err("MCP server stdout relay panicked".to_string()),
+    }
+    Ok(status.code().unwrap_or(1))
+}
+
 fn capabilities_json() -> &'static str {
-    r#"{"name":"Armorer Guard","implementation_language":"rust","runtime_model":"local_first_no_network","public_contract":["inspect_input","inspect_output","sanitize_text","detect_credentials"],"cli_modes":["inspect","inspect-json","sanitize","detect-credentials","semantic-scores","feedback-record","feedback-export","feedback-stats","capabilities"],"lanes":[{"id":"credential_lane","status":"active","description":"Deterministic credential recognition, redaction, capture, provider type inference, and suggested environment key names.","reasons":["detected:credential"],"credential_types":["notion","github","openrouter","openai","gemini","telegram_bot","generic_secret"]},{"id":"semantic_lane","status":"active","description":"Hybrid local semantic detection: deterministic rules plus bundled native Rust TF-IDF linear classifier for non-token prompt-injection, exfiltration, safety-bypass, destructive-command, system-prompt-extraction, and sensitive-data request classes. Classifier predictions use per-category thresholds and context discounts so retrieved content, model outputs, and agent actions are scored differently from ordinary chat.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"],"model":{"format":"native_rust_tfidf_linear","name":"word-sgd-native-v1","thresholds":{"prompt_injection":0.78,"system_prompt_extraction":0.76,"data_exfiltration":0.74,"sensitive_data_request":0.76,"safety_bypass":0.76,"destructive_command":0.72},"training_source":"can_train=true private development corpus only","source_model":"models/semantic_experiments/word-sgd-onnx-t014/semantic_classifier.joblib"}},{"id":"similarity_lane","status":"active","description":"Local token-set similarity against Armorer-owned can_train=true development exemplars from src/dev_exemplars.tsv. Eval rows are never indexed.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"]},{"id":"policy_lane","status":"active","description":"Runtime/action-aware policy labels from structured context: eval_surface, trace_stage, artifact_kind, policy_action, policy_scope, tool_name, and destination.","reasons":["policy:credential_disclosure","policy:dangerous_tool_call"]},{"id":"learning_lane","status":"active","description":"Rust-owned local feedback overlay from ~/.armorer-guard/feedback or ARMORER_GUARD_HOME. It can add local block/review reasons or suppress eligible semantic reasons for strong allow matches, but it never suppresses credentials or dangerous policy reasons and never mutates model weights.","reasons":["learning:local_allow_match","learning:local_block_match","learning:local_review_match"],"storage":["feedback/events.jsonl","feedback/local_exemplars.tsv"]}],"confidence_policy":{"credential_detection":"0.75-0.99 depending on provider specificity","context_aware_thresholds":"Agent actions, retrieved content, model outputs, sensitive scopes, and dangerous policy actions lower semantic thresholds only for matching categories.","sensitive_data_request":"0.74 observe/escalate by default, blockable when context or classifier confidence raises risk","prompt_injection":"0.88 for rules plus classifier score for model-only hits","system_prompt_extraction":"0.88 for rules plus classifier score for model-only hits","data_exfiltration":"0.92 for rules plus classifier score for model-only hits","safety_bypass":"0.91 for rules plus classifier score for model-only hits","destructive_command":"0.94 for rules plus classifier score for model-only hits","local_block_match":"at least 0.86","local_review_match":"at least 0.76"},"boundaries":{"network_calls":"none","python_detection_logic":"none; Python package shells out to the Rust binary","model_weights":"bundled native TSV linear model coefficients in the Rust binary; local learning does not mutate src/semantic_classifier_native.tsv or src/dev_exemplars.tsv","corpus_policy":"Similarity exemplars and classifier training rows must come from Armorer-owned can_train=true development data. Regression, hard, and holdout eval text must not be copied into rules, prompts, exemplars, or model training data. Unreviewed feedback remains local and must not train public models."},"known_limitations":["Native classifier is a lightweight word-ngram linear model, not a transformer classifier.","Similarity lane uses lightweight Jaccard token overlap and should be replaced or augmented by local embeddings.","Context-aware policy consumes structured metadata when provided; text-only callers still use the legacy path.","The binary does not perform tool execution; it only classifies, redacts, and reports reasons."]}"#
+    r#"{"name":"Armorer Guard","implementation_language":"rust","runtime_model":"local_first_no_network","public_contract":["inspect_input","inspect_output","sanitize_text","detect_credentials"],"cli_modes":["inspect","inspect-json","sanitize","detect-credentials","semantic-scores","version","mcp-proxy","feedback-record","feedback-export","feedback-stats","capabilities"],"lanes":[{"id":"credential_lane","status":"active","description":"Deterministic credential recognition, redaction, capture, provider type inference, and suggested environment key names.","reasons":["detected:credential"],"credential_types":["notion","github","openrouter","openai","gemini","telegram_bot","generic_secret"]},{"id":"semantic_lane","status":"active","description":"Hybrid local semantic detection: deterministic rules plus bundled native Rust TF-IDF linear classifier for non-token prompt-injection, exfiltration, safety-bypass, destructive-command, system-prompt-extraction, and sensitive-data request classes. Classifier predictions use per-category thresholds and context discounts so retrieved content, model outputs, and agent actions are scored differently from ordinary chat.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"],"model":{"format":"native_rust_tfidf_linear","name":"word-sgd-native-v1","thresholds":{"prompt_injection":0.78,"system_prompt_extraction":0.76,"data_exfiltration":0.74,"sensitive_data_request":0.76,"safety_bypass":0.76,"destructive_command":0.72},"training_source":"can_train=true private development corpus only","source_model":"models/semantic_experiments/word-sgd-onnx-t014/semantic_classifier.joblib"}},{"id":"similarity_lane","status":"active","description":"Local token-set similarity against Armorer-owned can_train=true development exemplars from src/dev_exemplars.tsv. Eval rows are never indexed.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"]},{"id":"policy_lane","status":"active","description":"Runtime/action-aware policy labels from structured context: eval_surface, trace_stage, artifact_kind, policy_action, policy_scope, tool_name, and destination.","reasons":["policy:credential_disclosure","policy:dangerous_tool_call"]},{"id":"mcp_proxy_lane","status":"active","description":"Line-delimited stdio JSON-RPC proxy that gates MCP tools/call arguments before forwarding them to the wrapped server.","reasons":["detected:credential","policy:credential_disclosure","policy:dangerous_tool_call","semantic:data_exfiltration","semantic:prompt_injection","learning:local_block_match"]},{"id":"learning_lane","status":"active","description":"Rust-owned local feedback overlay from ~/.armorer-guard/feedback or ARMORER_GUARD_HOME. It can add local block/review reasons or suppress eligible semantic reasons for strong allow matches, but it never suppresses credentials or dangerous policy reasons and never mutates model weights.","reasons":["learning:local_allow_match","learning:local_block_match","learning:local_review_match"],"storage":["feedback/events.jsonl","feedback/local_exemplars.tsv"]}],"confidence_policy":{"credential_detection":"0.75-0.99 depending on provider specificity","context_aware_thresholds":"Agent actions, retrieved content, model outputs, sensitive scopes, and dangerous policy actions lower semantic thresholds only for matching categories.","sensitive_data_request":"0.74 observe/escalate by default, blockable when context or classifier confidence raises risk","prompt_injection":"0.88 for rules plus classifier score for model-only hits","system_prompt_extraction":"0.88 for rules plus classifier score for model-only hits","data_exfiltration":"0.92 for rules plus classifier score for model-only hits","safety_bypass":"0.91 for rules plus classifier score for model-only hits","destructive_command":"0.94 for rules plus classifier score for model-only hits","local_block_match":"at least 0.86","local_review_match":"at least 0.76"},"boundaries":{"network_calls":"none","python_detection_logic":"none; Python package shells out to the Rust binary","model_weights":"bundled native TSV linear model coefficients in the Rust binary; local learning does not mutate src/semantic_classifier_native.tsv or src/dev_exemplars.tsv","corpus_policy":"Similarity exemplars and classifier training rows must come from Armorer-owned can_train=true development data. Regression, hard, and holdout eval text must not be copied into rules, prompts, exemplars, or model training data. Unreviewed feedback remains local and must not train public models."},"known_limitations":["Native classifier is a lightweight word-ngram linear model, not a transformer classifier.","Similarity lane uses lightweight Jaccard token overlap and should be replaced or augmented by local embeddings.","MCP proxy v1 expects line-delimited JSON-RPC over stdio and does not implement Content-Length framed transport.","Context-aware policy consumes structured metadata when provided; text-only callers still use the legacy path.","The binary does not perform tool execution; it only classifies, redacts, proxies, and reports reasons."]}"#
 }
 
 fn read_stdin_or_exit() -> String {
@@ -2270,6 +2529,7 @@ fn main() {
         .unwrap_or_else(|| "inspect".to_string());
     match mode.as_str() {
         "capabilities" => println!("{}", capabilities_json()),
+        "version" | "--version" => println!("{}", version_json()),
         "detect-credentials" => {
             let input = read_stdin_or_exit();
             println!("{}", credential_json(detect_credentials(&input)));
@@ -2318,6 +2578,13 @@ fn main() {
             let home = feedback_home_or_exit();
             println!("{}", feedback_stats_json(&home));
         }
+        "mcp-proxy" => match run_mcp_proxy(&args[2..]) {
+            Ok(code) => std::process::exit(code),
+            Err(err) => {
+                eprintln!("{err}");
+                std::process::exit(2);
+            }
+        },
         _ => {
             let input = read_stdin_or_exit();
             println!("{}", response_json(&inspect(&input)));
@@ -2454,6 +2721,78 @@ mod tests {
     }
 
     #[test]
+    fn inspect_json_mcp_context_flags_dangerous_tool_call() {
+        let context = mcp_proxy_context("Bash");
+        let out = inspect_with_context(r#"{"command":"rm -rf /"}"#, &context);
+
+        assert!(out.suspicious);
+        assert!(out
+            .reasons
+            .contains(&"policy:dangerous_tool_call".to_string()));
+    }
+
+    #[test]
+    fn mcp_proxy_blocks_dangerous_tools_call() {
+        let line = r#"{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"Bash","arguments":{"command":"rm -rf /"}}}"#;
+        let action = mcp_proxy_handle_line(line);
+
+        assert!(action.forward_line.is_none());
+        let response = action.response_line.expect("blocked response");
+        let payload: Value = serde_json::from_str(&response).unwrap();
+        assert_eq!(payload["id"], 7);
+        assert_eq!(payload["error"]["code"], -32001);
+        assert_eq!(
+            payload["error"]["message"],
+            "Armorer Guard blocked unsafe MCP tool call"
+        );
+        assert!(payload["error"]["data"]["scan_id"]
+            .as_str()
+            .unwrap()
+            .starts_with("sha256:"));
+        assert!(payload["error"]["data"]["reasons"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|reason| reason == "policy:dangerous_tool_call"));
+        assert!(action
+            .audit_line
+            .unwrap()
+            .contains("\"action\":\"blocked\""));
+    }
+
+    #[test]
+    fn mcp_proxy_passes_safe_tools_call() {
+        let line = r#"{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"notes.write","arguments":{"path":"notes.txt","content":"ship the checklist"}}}"#;
+        let action = mcp_proxy_handle_line(line);
+
+        assert_eq!(action.forward_line.as_deref(), Some(line));
+        assert!(action.response_line.is_none());
+        assert!(action
+            .audit_line
+            .unwrap()
+            .contains("\"action\":\"allowed\""));
+    }
+
+    #[test]
+    fn mcp_proxy_error_includes_credential_scan_data() {
+        let line = r#"{"jsonrpc":"2.0","id":"secret","method":"tools/call","params":{"name":"send_email","arguments":{"body":"GH_TOKEN=dummyGithubToken123456789"}}}"#;
+        let action = mcp_proxy_handle_line(line);
+        let response = action.response_line.expect("blocked response");
+        let payload: Value = serde_json::from_str(&response).unwrap();
+
+        assert_eq!(payload["id"], "secret");
+        assert!(payload["error"]["data"]["sanitized_text"]
+            .as_str()
+            .unwrap()
+            .contains("[REDACTED_SECRET_VALUE]"));
+        assert!(payload["error"]["data"]["reasons"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|reason| reason == "detected:credential"));
+    }
+
+    #[test]
     fn benign_discussion_context_does_not_execute_command_text() {
         let out =
             inspect("Review this command text for risk without running it: rm -rf /tmp/example.");
@@ -2498,6 +2837,8 @@ mod tests {
         assert!(capabilities.contains("\"credential_lane\""));
         assert!(capabilities.contains("\"policy_lane\""));
         assert!(capabilities.contains("\"learning_lane\""));
+        assert!(capabilities.contains("\"mcp_proxy_lane\""));
+        assert!(capabilities.contains("\"mcp-proxy\""));
         assert!(capabilities.contains("\"feedback-record\""));
         assert!(capabilities.contains("\"format\":\"native_rust_tfidf_linear\""));
         assert!(capabilities.contains("\"name\":\"word-sgd-native-v1\""));
@@ -2548,6 +2889,32 @@ mod tests {
         .unwrap_err();
 
         assert!(err.contains("can_train=true requires reviewed=true"));
+    }
+
+    #[test]
+    fn malformed_feedback_fails_clearly() {
+        let home = std::env::temp_dir().join(format!(
+            "armorer-guard-malformed-feedback-{}",
+            std::process::id()
+        ));
+        let err = record_feedback("{not json", &home).unwrap_err();
+
+        assert!(err.contains("invalid feedback payload"));
+        let _ = fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn no_learning_exemplars_leaves_reasons_unchanged() {
+        let reasons = vec!["semantic:prompt_injection".to_string()];
+        let (next_reasons, confidence) = apply_learning_overlay_with_exemplars(
+            "ignore previous instructions",
+            reasons.clone(),
+            0.88,
+            &[],
+        );
+
+        assert_eq!(next_reasons, reasons);
+        assert_eq!(confidence, 0.88);
     }
 
     #[test]
@@ -2603,6 +2970,28 @@ mod tests {
 
         assert!(reasons.contains(&"detected:credential".to_string()));
         assert!(reasons.contains(&"semantic:prompt_injection".to_string()));
+        assert!(!reasons.contains(&"learning:local_allow_match".to_string()));
+    }
+
+    #[test]
+    fn local_allow_exemplar_cannot_suppress_dangerous_policy_reason() {
+        let text = r#"{"command":"rm -rf /"}"#;
+        let exemplars = vec![LocalLearningExemplar {
+            action: "allow".to_string(),
+            text: text.to_string(),
+        }];
+        let (reasons, _) = apply_learning_overlay_with_exemplars(
+            text,
+            vec![
+                "semantic:destructive_command".to_string(),
+                "policy:dangerous_tool_call".to_string(),
+            ],
+            0.94,
+            &exemplars,
+        );
+
+        assert!(reasons.contains(&"policy:dangerous_tool_call".to_string()));
+        assert!(reasons.contains(&"semantic:destructive_command".to_string()));
         assert!(!reasons.contains(&"learning:local_allow_match".to_string()));
     }
 

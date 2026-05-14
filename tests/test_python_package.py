@@ -41,9 +41,16 @@ def test_capabilities_are_rust_owned() -> None:
     capabilities = armorer_guard.capabilities()
     assert capabilities["implementation_language"] == "rust"
     assert capabilities["boundaries"]["python_detection_logic"].startswith("none")
+    assert "mcp-proxy" in capabilities["cli_modes"]
     assert {lane["id"] for lane in capabilities["lanes"]} >= {
         "credential_lane",
         "semantic_lane",
         "similarity_lane",
         "policy_lane",
+        "mcp_proxy_lane",
     }
+
+
+def test_package_version_matches_binary() -> None:
+    version_info = armorer_guard.version_info()
+    assert armorer_guard.__version__ == version_info["version"]

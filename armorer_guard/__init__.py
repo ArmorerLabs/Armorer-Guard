@@ -1,11 +1,28 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from importlib.metadata import PackageNotFoundError, version
 import json
 import os
 from pathlib import Path
 import subprocess
 from typing import Any
+
+
+def _source_tree_version() -> str | None:
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    if not pyproject.exists():
+        return None
+    for line in pyproject.read_text(encoding="utf-8").splitlines():
+        if line.strip().startswith("version = "):
+            return line.split("=", 1)[1].strip().strip('"')
+    return None
+
+
+try:
+    __version__ = _source_tree_version() or version("armorer-guard")
+except PackageNotFoundError:
+    __version__ = "0.2.3"
 
 
 @dataclass(frozen=True)
@@ -33,13 +50,13 @@ def _binary_name() -> str:
 
 
 def binary_path() -> Path:
-    path = Path(__file__).resolve().parent / "bin" / _binary_name()
-    if path.exists():
-        return path
-
     source_tree_binary = Path(__file__).resolve().parents[1] / "target" / "release" / _binary_name()
     if source_tree_binary.exists():
         return source_tree_binary
+
+    path = Path(__file__).resolve().parent / "bin" / _binary_name()
+    if path.exists():
+        return path
 
     raise RuntimeError(
         "Armorer Guard binary is missing. Install a wheel that includes the binary "
@@ -113,4 +130,11 @@ def capabilities() -> dict[str, Any]:
     payload = _run("capabilities", "")
     if not isinstance(payload, dict):
         raise RuntimeError("Armorer Guard returned an invalid capabilities payload")
+    return payload
+
+
+def version_info() -> dict[str, Any]:
+    payload = _run("version", "")
+    if not isinstance(payload, dict):
+        raise RuntimeError("Armorer Guard returned an invalid version payload")
     return payload
