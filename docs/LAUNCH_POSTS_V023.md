@@ -22,6 +22,9 @@ https://huggingface.co/spaces/armorer-labs/armorer-guard-demo
 Repo:
 https://github.com/ArmorerLabs/Armorer-Guard
 
+Demo GIF:
+https://github.com/ArmorerLabs/Armorer-Guard/blob/main/docs/assets/armorer-guard-v023-mcp-demo.gif
+
 I am looking for feedback from people building agents: where would you put this
 check, and what false positives would make it unusable?
 

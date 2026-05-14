@@ -24,7 +24,7 @@ or install the local scanner in one command.
 
 ---
 
-![Armorer Guard demo](docs/assets/armorer-guard-demo.gif)
+![Armorer Guard MCP proxy demo](docs/assets/armorer-guard-v023-mcp-demo.gif)
 
 Armorer Guard is a tiny, local-first scanner built for the hot path of agent
 runtimes. It redacts secrets, detects prompt injection, flags exfiltration,
