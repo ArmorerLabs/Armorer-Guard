@@ -41,3 +41,8 @@ jobs:
           result = armorer_guard.inspect_input("GH_TOKEN=dummyGithubToken123456789")
           assert "[REDACTED_SECRET_VALUE]" in result.sanitized_text
           PY
+
+      - name: Test Node wrapper
+        shell: bash
+        run: |
+          ARMORER_GUARD_BIN="$PWD/target/release/armorer-guard" npm test --prefix npm/armorer-guard

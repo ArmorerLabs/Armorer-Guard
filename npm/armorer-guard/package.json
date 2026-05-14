@@ -1,0 +1,40 @@
+{
+  "name": "@armorer/guard",
+  "version": "0.2.3",
+  "description": "Node wrapper for the Armorer Guard local Rust scanner and MCP proxy.",
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "bin": {
+    "armorer-guard-node": "./cli.js"
+  },
+  "files": [
+    "README.md",
+    "cli.js",
+    "index.d.ts",
+    "index.js"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "mcp",
+    "ai-agents",
+    "prompt-injection",
+    "security",
+    "guardrails"
+  ],
+  "homepage": "https://github.com/ArmorerLabs/Armorer-Guard",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ArmorerLabs/Armorer-Guard.git",
+    "directory": "npm/armorer-guard"
+  },
+  "bugs": {
+    "url": "https://github.com/ArmorerLabs/Armorer-Guard/issues"
+  },
+  "license": "SEE LICENSE IN ../../LICENSE.md",
+  "engines": {
+    "node": ">=18"
+  }
+}
