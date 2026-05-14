@@ -63,11 +63,12 @@ Disallowed Python responsibilities:
 - semantic scoring
 - policy scoring
 - similarity scoring
+- local learning overlay
 - redaction logic
 
 ## Detection Lanes
 
-Armorer Guard uses four Rust-owned lanes.
+Armorer Guard uses five Rust-owned lanes.
 
 `credential_lane`
 
@@ -91,6 +92,19 @@ Local token-set similarity against Armorer-owned development exemplars from
 Runtime/action-aware labels for dangerous actions such as credential disclosure,
 destructive operations, and bypassing guard controls.
 
+`learning_lane`
+
+Local feedback overlay stored outside the repository under
+`~/.armorer-guard/feedback` or the deployment-specific `ARMORER_GUARD_HOME`.
+The lane compares input tokens against sanitized local exemplars and can add
+`learning:local_block_match` or `learning:local_review_match`. Strong local
+allow matches can suppress eligible semantic reasons, but never
+`detected:credential`, `policy:credential_disclosure`, or
+`policy:dangerous_tool_call`.
+
+This is immediate local adaptation, not online weight mutation. It does not edit
+`src/semantic_classifier_native.tsv` or `src/dev_exemplars.tsv`.
+
 ## Why Rust
 
 Guard needs to be small, local, portable, and easy to ship as a single binary.
@@ -109,6 +123,7 @@ The next smarter implementations should remain Rust-owned:
 - keep release eval rows out of Rust rules, prompts, similarity exemplars, and
   classifier training data
 - train or tune only on explicit `can_train=true` development data
+- keep unreviewed feedback local and out of public model training
 - use regression and holdout suites as gates for generalization, not as prompt
   corpora to memorize
 

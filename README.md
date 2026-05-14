@@ -159,7 +159,8 @@ you can paste into the CLI, browser demo, NanoClaw, or CI.
 ## Detection Lanes
 
 Armorer Guard combines deterministic rules, a local semantic classifier,
-similarity checks, and runtime-aware policy labels.
+similarity checks, runtime-aware policy labels, and a Rust-owned local learning
+overlay.
 
 | Lane | Signals |
 | --- | --- |
@@ -167,6 +168,7 @@ similarity checks, and runtime-aware policy labels.
 | `semantic_lane` | prompt injection, system prompt extraction, data exfiltration, safety bypass, destructive commands |
 | `similarity_lane` | Armorer-owned trainable development exemplars |
 | `policy_lane` | `eval_surface`, `trace_stage`, `tool_name`, destination, policy action |
+| `learning_lane` | local allow/block/review feedback stored outside the repo |
 
 Common reasons:
 
@@ -180,7 +182,57 @@ semantic:safety_bypass
 semantic:destructive_command
 policy:dangerous_tool_call
 policy:credential_disclosure
+learning:local_allow_match
+learning:local_block_match
+learning:local_review_match
 ```
+
+## Armorer Guard Learning Loop
+
+Armorer Guard supports hybrid live learning: feedback adapts local enforcement
+immediately, while global model improvements go through reviewed, versioned
+retraining. No scanner network calls. No silent cloud upload. No
+poisoning-by-default.
+
+Local feedback is stored outside the repository:
+
+```text
+~/.armorer-guard/feedback/events.jsonl
+~/.armorer-guard/feedback/local_exemplars.tsv
+```
+
+Use `ARMORER_GUARD_HOME` to isolate feedback for tests, demos, or deployments:
+
+```bash
+export ARMORER_GUARD_HOME=/tmp/armorer-guard-demo
+```
+
+Record sanitized feedback:
+
+```bash
+cat <<'JSON' | target/release/armorer-guard feedback-record
+{
+  "label": "false_positive",
+  "desired_action": "allow",
+  "sanitized_excerpt": "benign security runbook for rotating staging deployment credentials"
+}
+JSON
+```
+
+Then inspect again. A strong local allow match can suppress eligible semantic
+reasons and add `learning:local_allow_match`; credential disclosure and
+dangerous tool-call policy reasons cannot be suppressed by local feedback.
+
+Export reviewed rows for offline training:
+
+```bash
+target/release/armorer-guard feedback-stats
+target/release/armorer-guard feedback-export --reviewed-only
+```
+
+Unreviewed rows default to `can_train=false`. Reviewed exports are meant for the
+Python training pipeline only after secret scanning, dedupe, provenance checks,
+human review, and explicit `can_train=true` promotion.
 
 ## Install From Source
 
@@ -211,6 +263,9 @@ export ARMORER_GUARD_BIN="$PWD/target/release/armorer-guard"
 | `armorer-guard sanitize` | Return only sanitized text |
 | `armorer-guard detect-credentials` | Capture credential type and suggested env var |
 | `armorer-guard semantic-scores` | Show local classifier scores |
+| `armorer-guard feedback-record` | Record sanitized local feedback from JSON stdin |
+| `armorer-guard feedback-export` | Export local feedback as JSONL, optionally `--reviewed-only` |
+| `armorer-guard feedback-stats` | Count local feedback labels, actions, and exemplars |
 | `armorer-guard capabilities` | Print the machine-readable scanner contract |
 
 Inspect with context:

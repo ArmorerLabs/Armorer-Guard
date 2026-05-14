@@ -46,6 +46,9 @@ Supported context fields:
 - `suspicious`
 - `reasons`
 - `confidence`
+- `scan_id`
+- `model_version`
+- `learning_version`
 
 `detect_credentials` returns either `null` or:
 
@@ -138,6 +141,40 @@ Current behavior:
 
 Future behavior should replace or augment this with a local vector index.
 
+## Learning Lane
+
+Purpose:
+
+- adapt local enforcement from operator feedback without scanner network calls
+- keep deployment-specific allow/block/review corrections outside the repo
+- preserve reviewed, versioned global model releases instead of silent drift
+
+Current behavior:
+
+- reads local exemplars from `~/.armorer-guard/feedback/local_exemplars.tsv`
+- writes feedback events to `~/.armorer-guard/feedback/events.jsonl`
+- supports `ARMORER_GUARD_HOME` for tests and deployments
+- accepts sanitized feedback through `armorer-guard feedback-record`
+- exports reviewed rows through `armorer-guard feedback-export --reviewed-only`
+- reports counts through `armorer-guard feedback-stats`
+
+Current reason labels:
+
+- `learning:local_allow_match`
+- `learning:local_block_match`
+- `learning:local_review_match`
+
+Safety boundaries:
+
+- raw text is optional; sanitized excerpts and stable hashes are enough
+- feedback defaults to `can_train=false`
+- `can_train=true` requires `reviewed=true`
+- local allow feedback cannot suppress `detected:credential`
+- local allow feedback cannot suppress `policy:credential_disclosure`
+- local allow feedback cannot suppress `policy:dangerous_tool_call`
+- local learning does not mutate `src/semantic_classifier_native.tsv`
+- local learning does not mutate `src/dev_exemplars.tsv`
+
 ## Eval Hygiene
 
 Guard development data and release evaluation data are separate by design.
@@ -145,6 +182,7 @@ Guard development data and release evaluation data are separate by design.
 - `src/dev_exemplars.tsv` is the only current similarity source.
 - Development exemplars must be Armorer-owned, provenance-tagged, and explicitly marked trainable.
 - Regression, hard, and holdout eval case text must not be copied into Rust rules, similarity exemplars, classifier prompts, or model training data.
+- Unreviewed local feedback must not train public models.
 - Holdout failures may become visible regression cases only after the release decision, and only with rewritten wording that tests the general behavior rather than the exact prompt.
 
 ## Policy Lane
@@ -205,9 +243,9 @@ Armorer Guard does not:
 
 - call remote APIs
 - execute tools
-- mutate files
+- mutate model weights
 - store credentials
-- train models
+- train public models from unreviewed local feedback
 - fetch third-party corpora at runtime
 - rely on Python scanner logic
 
@@ -216,6 +254,7 @@ Armorer Guard does:
 - classify text
 - redact text
 - capture credential values for the caller to store safely
+- store sanitized local feedback when explicitly asked
 - emit stable reasons and confidence
 
 ## Known Limitations
