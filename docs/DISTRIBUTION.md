@@ -79,6 +79,9 @@ python -m pip install dist/*.whl
 python -c "import armorer_guard; print(armorer_guard.capabilities())"
 ARMORER_GUARD_BIN="$PWD/target/release/armorer-guard" npm test --prefix npm/armorer-guard
 cd npm/armorer-guard && npm publish --dry-run --access public
+brew tap ArmorerLabs/tap
+brew install ArmorerLabs/tap/armorer-guard
+brew test ArmorerLabs/tap/armorer-guard
 ```
 
 ## Publishing Rules
@@ -87,6 +90,7 @@ Do:
 
 - publish binaries/wheels with clear noncommercial licensing
 - publish `@armorerlabs/guard` only after `npm publish --dry-run --access public` is clean
+- update `ArmorerLabs/homebrew-tap` after every CLI release
 - sign or checksum release artifacts
 - verify that downstream callers can import and run Guard after install
 - verify `armorer-guard capabilities`

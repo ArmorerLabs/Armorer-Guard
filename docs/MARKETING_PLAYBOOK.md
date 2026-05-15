@@ -40,6 +40,18 @@ this check, and what false positives would make it unusable?
 Demo: https://huggingface.co/spaces/armorer-labs/armorer-guard-demo
 Repo: https://github.com/ArmorerLabs/Armorer-Guard
 
+## npm Launch Hook
+
+For Node/TypeScript and MCP audiences, lead with:
+
+```bash
+npm install @armorerlabs/guard
+```
+
+Then explain that the npm package is a thin wrapper around the local Rust
+scanner, not a JavaScript reimplementation. Use this for Node agents, MCP
+server projects, Cursor/Windsurf users, and framework middleware discussions.
+
 ## Outreach Rules
 
 - Do not ask directly for stars in comments.
