@@ -24,7 +24,7 @@ The Python wrapper exists only to support:
 
 The Node wrapper exists only to support:
 
-- `import { inspect, sanitize, requireSafeToolArgs } from "@armorer/guard"`
+- `import { inspect, sanitize, requireSafeToolArgs } from "@armorerlabs/guard"`
 - `armorer-guard-node inspect`
 - `armorer-guard-node mcp-proxy -- ...`
 - JavaScript/TypeScript projects that call the Rust binary through `PATH` or `ARMORER_GUARD_BIN`
@@ -86,7 +86,7 @@ cd npm/armorer-guard && npm publish --dry-run --access public
 Do:
 
 - publish binaries/wheels with clear noncommercial licensing
-- publish `@armorer/guard` only after `npm publish --dry-run --access public` is clean
+- publish `@armorerlabs/guard` only after `npm publish --dry-run --access public` is clean
 - sign or checksum release artifacts
 - verify that downstream callers can import and run Guard after install
 - verify `armorer-guard capabilities`

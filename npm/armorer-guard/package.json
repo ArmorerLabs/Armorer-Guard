@@ -1,5 +1,5 @@
 {
-  "name": "@armorer/guard",
+  "name": "@armorerlabs/guard",
   "version": "0.2.3",
   "description": "Node wrapper for the Armorer Guard local Rust scanner and MCP proxy.",
   "type": "module",

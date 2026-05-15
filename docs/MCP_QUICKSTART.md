@@ -112,18 +112,18 @@ The source package under `npm/armorer-guard` provides a Node wrapper around the
 Rust binary:
 
 ```bash
-npm install @armorer/guard
+npm install @armorerlabs/guard
 ```
 
 ```js
-import { requireSafeToolArgs } from "@armorer/guard";
+import { requireSafeToolArgs } from "@armorerlabs/guard";
 
 requireSafeToolArgs("Bash", {
   command: "rm -rf /",
 });
 ```
 
-If `@armorer/guard` is not visible in your registry yet, link the source package
+If `@armorerlabs/guard` is not visible in your registry yet, link the source package
 locally:
 
 ```bash
