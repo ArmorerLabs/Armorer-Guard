@@ -45,6 +45,11 @@ Blocked calls return a JSON-RPC error:
 
 Wrap the server command in `armorer-guard mcp-proxy --`.
 
+Typical config locations:
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
 ```json
 {
   "mcpServers": {
@@ -66,6 +71,9 @@ Wrap the server command in `armorer-guard mcp-proxy --`.
 ## Cursor / Windsurf
 
 Use the same shape in the MCP server config:
+
+- Cursor: open Settings, search for MCP, then edit the MCP server config.
+- Windsurf: open Cascade MCP settings, then edit the MCP server config.
 
 ```json
 {
@@ -103,6 +111,10 @@ change it to:
 The source package under `npm/armorer-guard` provides a Node wrapper around the
 Rust binary:
 
+```bash
+npm install @armorer/guard
+```
+
 ```js
 import { requireSafeToolArgs } from "@armorer/guard";
 
@@ -111,7 +123,8 @@ requireSafeToolArgs("Bash", {
 });
 ```
 
-Until `@armorer/guard` is published, link the source package locally:
+If `@armorer/guard` is not visible in your registry yet, link the source package
+locally:
 
 ```bash
 git clone https://github.com/ArmorerLabs/Armorer-Guard.git

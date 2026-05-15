@@ -6,7 +6,7 @@
   "main": "./index.js",
   "types": "./index.d.ts",
   "bin": {
-    "armorer-guard-node": "./cli.js"
+    "armorer-guard-node": "cli.js"
   },
   "files": [
     "README.md",

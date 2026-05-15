@@ -10,16 +10,24 @@ The package contains:
 
 - a Rust `armorer-guard` binary
 - a thin Python wrapper
+- a thin Node/TypeScript wrapper under `npm/armorer-guard`
 - a bundled native semantic classifier TSV for local/no-network runtime builds
-- no detector implementation in Python
+- no detector implementation in Python or JavaScript
 
-The wrapper exists only to support:
+The Python wrapper exists only to support:
 
 - `import armorer_guard`
 - `armorer_guard.inspect_input(...)`
 - `armorer_guard.detect_credentials(...)`
 - `armorer_guard.capabilities()`
 - `armorer-guard-python`
+
+The Node wrapper exists only to support:
+
+- `import { inspect, sanitize, requireSafeToolArgs } from "@armorer/guard"`
+- `armorer-guard-node inspect`
+- `armorer-guard-node mcp-proxy -- ...`
+- JavaScript/TypeScript projects that call the Rust binary through `PATH` or `ARMORER_GUARD_BIN`
 
 ## Binary Discovery
 
@@ -69,6 +77,8 @@ cargo build --release --locked
 python -m build --wheel
 python -m pip install dist/*.whl
 python -c "import armorer_guard; print(armorer_guard.capabilities())"
+ARMORER_GUARD_BIN="$PWD/target/release/armorer-guard" npm test --prefix npm/armorer-guard
+cd npm/armorer-guard && npm publish --dry-run --access public
 ```
 
 ## Publishing Rules
@@ -76,6 +86,7 @@ python -c "import armorer_guard; print(armorer_guard.capabilities())"
 Do:
 
 - publish binaries/wheels with clear noncommercial licensing
+- publish `@armorer/guard` only after `npm publish --dry-run --access public` is clean
 - sign or checksum release artifacts
 - verify that downstream callers can import and run Guard after install
 - verify `armorer-guard capabilities`
