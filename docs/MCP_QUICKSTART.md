@@ -68,12 +68,20 @@ Typical config locations:
 }
 ```
 
+Use separate `args` entries instead of a single shell-quoted command string. If
+your MCP server needs a path with spaces, keep it as one JSON array item, for
+example `"/Users/alex/Client Work"`.
+
 ## Cursor / Windsurf
 
-Use the same shape in the MCP server config:
+Use the same `command` plus `args` shape in the MCP server config.
 
-- Cursor: open Settings, search for MCP, then edit the MCP server config.
-- Windsurf: open Cascade MCP settings, then edit the MCP server config.
+Typical config locations:
+
+- Cursor global MCP config: `~/.cursor/mcp.json`
+- Cursor project MCP config: `.cursor/mcp.json`
+- Windsurf global MCP config: `~/.codeium/windsurf/mcp_config.json`
+- Windsurf project MCP config: `.windsurf/mcp_config.json`
 
 ```json
 {
@@ -84,6 +92,44 @@ Use the same shape in the MCP server config:
     }
   }
 }
+```
+
+Keep `mcp-proxy`, `--`, and every wrapped server argument as separate array
+entries. This avoids shell-specific quoting differences between desktop apps and
+lets the app launch the stdio server directly.
+
+## Validation Output
+
+The quickstart shape launches a wrapped line-delimited stdio MCP server. These
+local smoke tests show one unsafe `tools/call` blocked by Armorer Guard and one
+safe call forwarded to the wrapped server.
+
+Blocked unsafe call:
+
+```bash
+printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"Bash","arguments":{"command":"rm -rf /"}}}' \
+  | armorer-guard mcp-proxy -- python3 -c 'import sys; [print(line, end="", flush=True) for line in sys.stdin]'
+```
+
+Expected output contains a JSON-RPC error from the proxy instead of output from
+the wrapped server:
+
+```json
+{"jsonrpc":"2.0","id":1,"error":{"code":-32001,"message":"Armorer Guard blocked unsafe MCP tool call","data":{"reasons":["policy:dangerous_tool_call"],"confidence":0.94,"sanitized_text":"{\"command\":\"rm -rf /\"}","scan_id":"sha256:..."}}}
+```
+
+Allowed safe call:
+
+```bash
+printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"notes.write","arguments":{"path":"notes.txt","content":"ship the checklist"}}}' \
+  | armorer-guard mcp-proxy -- python3 -c 'import sys; [print(line, end="", flush=True) for line in sys.stdin]'
+```
+
+Expected output is the original request echoed by the wrapped test server,
+showing the proxy forwarded it:
+
+```json
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"notes.write","arguments":{"path":"notes.txt","content":"ship the checklist"}}}
 ```
 
 ## Claude Code / Codex-Style MCP Setup
