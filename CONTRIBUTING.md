@@ -4,7 +4,7 @@ Armorer Guard accepts focused contributions that improve local scanner quality,
 packaging, documentation, tests, and reproducibility.
 
 By contributing, you agree that your contribution can be distributed by Armorer
-Labs under this repository's license and under separate commercial licenses.
+Labs under this repository's MIT license.
 
 Please keep changes small and include tests for scanner behavior changes.
 

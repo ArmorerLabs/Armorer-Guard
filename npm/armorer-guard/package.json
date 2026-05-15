@@ -1,6 +1,6 @@
 {
   "name": "@armorerlabs/guard",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Node wrapper for the Armorer Guard local Rust scanner and MCP proxy.",
   "type": "module",
   "main": "./index.js",
@@ -33,7 +33,7 @@
   "bugs": {
     "url": "https://github.com/ArmorerLabs/Armorer-Guard/issues"
   },
-  "license": "SEE LICENSE IN ../../LICENSE.md",
+  "license": "MIT",
   "engines": {
     "node": ">=18"
   }

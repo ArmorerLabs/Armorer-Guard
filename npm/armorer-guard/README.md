@@ -86,6 +86,5 @@ armorer-guard-node mcp-proxy -- npx your-mcp-server
 
 ## License
 
-The wrapper follows the Armorer Guard repository license. The runtime is
-source-available under PolyForm Noncommercial; commercial use requires a paid
-commercial license from Armorer Labs.
+The wrapper follows the Armorer Guard repository license. Armorer Guard is
+released under the MIT License.

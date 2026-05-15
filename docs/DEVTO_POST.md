@@ -154,5 +154,4 @@ Repo:
 
 https://github.com/ArmorerLabs/Armorer-Guard
 
-The project is source-available under PolyForm Noncommercial. Commercial use
-requires a paid commercial license from Armorer Labs.
+The project is released under the MIT License.

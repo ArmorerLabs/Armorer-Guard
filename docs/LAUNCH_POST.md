@@ -129,8 +129,7 @@ What we want feedback on:
 - integrations with agent runtimes, MCP clients, LangChain, CrewAI, NanoClaw,
   Claude Code-style workflows, and CI evals
 
-Source is public under PolyForm Noncommercial. Commercial use requires a paid
-license from Armorer Labs.
+Source is released under the MIT License.
 
 Demo:
 

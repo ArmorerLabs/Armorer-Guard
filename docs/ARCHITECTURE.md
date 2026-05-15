@@ -1,6 +1,6 @@
 # Armorer Guard Architecture
 
-Armorer Guard is a public source-available, local-first security scanner used by
+Armorer Guard is an MIT-licensed, local-first security scanner used by
 agent runtimes. The implementation boundary is deliberately simple:
 
 - Rust owns all detection behavior.

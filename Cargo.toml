@@ -1,12 +1,12 @@
 [package]
 name = "armorer-guard"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 description = "Fast local Rust scanner for AI-agent prompt injection, credential leaks, exfiltration, and risky tool calls."
 readme = "README.md"
 homepage = "https://github.com/ArmorerLabs/Armorer-Guard"
 repository = "https://github.com/ArmorerLabs/Armorer-Guard"
-license-file = "LICENSE.md"
+license = "MIT"
 keywords = ["security", "ai-agents", "prompt-injection", "guardrails", "rust"]
 categories = ["command-line-utilities", "development-tools"]
 include = [

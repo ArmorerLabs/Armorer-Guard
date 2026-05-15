@@ -1,8 +1,6 @@
 # Armorer Guard Distribution
 
-Armorer Guard is public source-available software under the PolyForm
-Noncommercial License 1.0.0. Commercial use requires a separate paid commercial
-license from Armorer Labs.
+Armorer Guard is MIT-licensed software.
 
 ## Package Shape
 
@@ -85,7 +83,7 @@ cd npm/armorer-guard && npm publish --dry-run --access public
 
 Do:
 
-- publish binaries/wheels with clear noncommercial licensing
+- publish binaries/wheels with clear MIT licensing
 - publish `@armorerlabs/guard` only after `npm publish --dry-run --access public` is clean
 - sign or checksum release artifacts
 - verify that downstream callers can import and run Guard after install

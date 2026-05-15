@@ -22,7 +22,7 @@ def _source_tree_version() -> str | None:
 try:
     __version__ = _source_tree_version() or version("armorer-guard")
 except PackageNotFoundError:
-    __version__ = "0.2.3"
+    __version__ = "0.2.4"
 
 
 @dataclass(frozen=True)

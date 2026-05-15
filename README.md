@@ -14,7 +14,7 @@ they become actions.
 [![npm](https://img.shields.io/npm/v/@armorerlabs/guard?logo=npm&label=npm)](https://www.npmjs.com/package/@armorerlabs/guard)
 [![Model](https://img.shields.io/badge/model-Hugging%20Face-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/armorer-labs/armorer-guard-semantic-classifier)
 [![Demo](https://img.shields.io/badge/demo-play%20on%20HF-FF9D00?logo=huggingface&logoColor=black)](https://huggingface.co/spaces/armorer-labs/armorer-guard-demo)
-[![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue)](LICENSE.md)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE.md)
 
 **MCP proxy. Credential redaction. Learning Loop. 0.0247 ms average classifier latency. No scanner network calls.**
 
@@ -53,7 +53,7 @@ or orchestrator can enforce.
 | Structured enforcement | JSON reasons, confidence, scan IDs, model version, and learning version |
 | Credential redaction | Known provider keys and generic secrets are replaced before logging or forwarding |
 | Local learning | Feedback adapts local policy without mutating model weights or uploading data |
-| License posture | PolyForm Noncommercial; commercial use is available through Armorer Labs |
+| License posture | MIT-licensed for broad personal, research, and commercial use |
 
 ## Protect One MCP Server In 2 Minutes
 
@@ -472,14 +472,7 @@ Recommended enforcement:
 
 ## License
 
-Armorer Guard is public source-available software released under the
-[PolyForm Noncommercial License 1.0.0](LICENSE.md).
-
-Noncommercial research, evaluation, personal, educational, and other permitted
-noncommercial uses are allowed. Commercial use requires a separate paid
-commercial license from Armorer Labs.
-
-Commercial licensing: dev@armorerlabs.com
+Armorer Guard is released under the [MIT License](LICENSE.md).
 
 ## Links
 
@@ -492,4 +485,3 @@ Commercial licensing: dev@armorerlabs.com
 - [Distribution](docs/DISTRIBUTION.md)
 - [Integration examples](examples/README.md)
 - [Results](docs/RESULTS.md)
-- [Commercial license](COMMERCIAL_LICENSE.md)
