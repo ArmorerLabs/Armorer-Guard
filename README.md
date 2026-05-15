@@ -97,13 +97,6 @@ requireSafeToolArgs("Bash", {
 });
 ```
 
-Use Homebrew on macOS:
-
-```bash
-brew tap ArmorerLabs/tap
-brew install armorer-guard
-```
-
 Use the Python package when you want a bundled binary plus `import
 armorer_guard`:
 
