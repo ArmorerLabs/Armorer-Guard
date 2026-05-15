@@ -21,6 +21,14 @@ Then install the Node wrapper:
 npm install @armorer/guard
 ```
 
+Until the npm package is published, use the repository package directly:
+
+```bash
+git clone https://github.com/ArmorerLabs/Armorer-Guard.git
+cd Armorer-Guard/npm/armorer-guard
+npm link
+```
+
 If the binary is not on `PATH`, set:
 
 ```bash

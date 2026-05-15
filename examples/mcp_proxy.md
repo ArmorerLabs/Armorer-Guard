@@ -7,6 +7,8 @@ Armorer Guard can wrap a line-delimited stdio MCP server and inspect
 armorer-guard mcp-proxy -- npx some-mcp-server
 ```
 
+For a shorter first-time path, see [`docs/MCP_QUICKSTART.md`](../docs/MCP_QUICKSTART.md).
+
 Add an audit log only when you want local JSONL receipts:
 
 ```bash

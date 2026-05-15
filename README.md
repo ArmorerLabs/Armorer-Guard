@@ -2,10 +2,10 @@
 
 # Armorer Guard
 
-### Rust-native security scanning for AI agents
+### Local Rust MCP security before tool calls execute
 
-Inspect prompts, model output, and tool calls locally before they become
-incidents.
+Protect AI-agent prompts, model output, and MCP `tools/call` arguments before
+they become actions.
 
 [![Rust](https://img.shields.io/badge/core-Rust-black?logo=rust)](https://www.rust-lang.org/)
 [![Python](https://img.shields.io/badge/python-supported-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -15,10 +15,16 @@ incidents.
 [![Demo](https://img.shields.io/badge/demo-play%20on%20HF-FF9D00?logo=huggingface&logoColor=black)](https://huggingface.co/spaces/armorer-labs/armorer-guard-demo)
 [![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue)](LICENSE.md)
 
-**0.0247 ms average classifier latency. No scanner network calls. Structured JSON enforcement.**
+**MCP proxy. Credential redaction. Learning Loop. 0.0247 ms average classifier latency. No scanner network calls.**
 
-[Try the browser demo](https://huggingface.co/spaces/armorer-labs/armorer-guard-demo)
-or install the local scanner in one command.
+```bash
+cargo install armorer-guard --locked
+armorer-guard mcp-proxy -- npx your-mcp-server
+```
+
+[Try the live demo](https://huggingface.co/spaces/armorer-labs/armorer-guard-demo)
+· [MCP quickstart](docs/MCP_QUICKSTART.md)
+· [Node wrapper](npm/armorer-guard)
 
 </div>
 
@@ -41,6 +47,32 @@ or orchestrator can enforce.
 | Credential redaction | Known provider keys and generic secrets are replaced before logging or forwarding |
 | Local learning | Feedback adapts local policy without mutating model weights or uploading data |
 | License posture | PolyForm Noncommercial; commercial use is available through Armorer Labs |
+
+## Protect One MCP Server In 2 Minutes
+
+Install the Rust CLI:
+
+```bash
+cargo install armorer-guard --locked
+```
+
+Wrap any line-delimited stdio MCP server:
+
+```bash
+armorer-guard mcp-proxy -- npx your-mcp-server
+```
+
+Example with the filesystem MCP server:
+
+```bash
+armorer-guard mcp-proxy -- npx -y @modelcontextprotocol/server-filesystem /tmp
+```
+
+Armorer Guard scans `tools/call` arguments before forwarding them to the wrapped
+server. Unsafe calls return a JSON-RPC error with `reasons`, `confidence`,
+`sanitized_text`, and `scan_id`.
+
+More copy-paste configs: [`docs/MCP_QUICKSTART.md`](docs/MCP_QUICKSTART.md).
 
 ## Install in 60 Seconds
 
