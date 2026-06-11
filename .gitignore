@@ -78,6 +78,7 @@ armorer_guard/bin/armorer-guard
 armorer_guard/bin/armorer-guard.exe
 models/
 training/
+results/
 src/semantic_classifier.onnx
 
 # Jupyter Notebook

@@ -1,6 +1,6 @@
 [package]
 name = "armorer-guard"
-version = "0.2.4"
+version = "0.3.0"
 edition = "2021"
 description = "Fast local Rust scanner for AI-agent prompt injection, credential leaks, exfiltration, and risky tool calls."
 readme = "README.md"
@@ -23,6 +23,7 @@ include = [
     "/docs/COMPARISON.md",
     "/docs/HF_DEMO_RELEASE_CHECKLIST.md",
     "/docs/MARKETING_PLAYBOOK.md",
+    "/docs/RELEASE_NOTES_V030.md",
     "/docs/RESULTS.md",
     "/docs/SECURITY_MODEL.md",
     "/docs/assets/**",

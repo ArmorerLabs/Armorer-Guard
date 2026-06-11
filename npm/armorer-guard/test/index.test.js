@@ -61,5 +61,5 @@ test("requireSafeToolArgs throws with a verdict for dangerous tool calls", { ski
 test("versionInfo returns package metadata through the Rust binary", { skip: !hasBinary }, () => {
   const version = versionInfo({ bin });
   assert.equal(version.name, "armorer-guard");
-  assert.equal(version.version, "0.2.4");
+  assert.equal(version.version, "0.3.0");
 });

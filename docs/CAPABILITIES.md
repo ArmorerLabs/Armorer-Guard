@@ -37,6 +37,7 @@ Supported context fields:
 - `policy_scope`
 - `tool_name`
 - `destination`
+- `detection_profile`
 
 ## Output Contract
 
@@ -116,8 +117,19 @@ Current behavior:
 - local only
 - deterministic lexical/rule scoring
 - bundled Rust-native TF-IDF linear classifier, `word-sgd-native-v1`
+- profile-only Rust-native char-wb fallback classifier, `char-wb-public-distill-30k-v1`
 - per-category classifier thresholds
+- production `agent-runtime` does not run the char-wb fallback
+- profile fallback training uses public benchmark train splits plus synthetic
+  benign controls and Armorer-owned hard-negative/profile data; heldout
+  validation must be reported separately from full-corpus public checks
 - context discounts for retrieved content, model output, and agent actions
+- metadata-driven word n-gram scoring, so exported native models can use
+  unigrams, bigrams, trigrams, or four-grams without Rust code changes
+- bounded multi-view scanning for long or HTML-like inputs: whole input first,
+  then stable head/middle/tail windows and a structural HTML view
+- persistent `inspect-jsonl` mode for low-latency sidecar integrations and
+  benchmark runners that should not pay process startup per scan
 - no network calls
 
 This lane is still intentionally lightweight. The next major target is a
@@ -163,6 +175,15 @@ Current reason labels:
 - `learning:local_allow_match`
 - `learning:local_block_match`
 - `learning:local_review_match`
+
+High-risk boundary review labels:
+
+- `review:prompt_injection`
+- `review:system_prompt_extraction`
+- `review:data_exfiltration`
+- `review:sensitive_data_request`
+- `review:safety_bypass`
+- `review:destructive_command`
 
 Safety boundaries:
 

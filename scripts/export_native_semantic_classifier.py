@@ -17,6 +17,7 @@ def main() -> None:
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--threshold", type=float, default=0.80)
+    parser.add_argument("--model-name", default="word-sgd-native-v1")
     args = parser.parse_args()
 
     artifact = joblib.load(args.model)
@@ -29,10 +30,16 @@ def main() -> None:
     intercepts = [float(estimator.intercept_[0]) for estimator in classifier.estimators_]
     coefficients = [estimator.coef_[0].astype(float).tolist() for estimator in classifier.estimators_]
 
+    model_path = args.model.resolve()
+    try:
+        source_model = str(model_path.relative_to(ROOT))
+    except ValueError:
+        source_model = str(model_path)
+
     metadata = {
         "format": "armorer_native_linear_tfidf_v1",
-        "source_model": str(args.model.relative_to(ROOT)),
-        "model_name": "word-sgd-native-v1",
+        "source_model": source_model,
+        "model_name": args.model_name,
         "threshold": args.threshold,
         "labels": labels,
         "analyzer": vectorizer.analyzer,

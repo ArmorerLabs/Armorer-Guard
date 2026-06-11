@@ -245,8 +245,8 @@ fits with other LLM security tools.
 ## Detection Lanes
 
 Armorer Guard combines deterministic rules, a local semantic classifier,
-similarity checks, runtime-aware policy labels, and a Rust-owned local learning
-overlay.
+similarity checks, runtime-aware policy labels, a high-risk boundary review
+lane, and a Rust-owned local learning overlay.
 
 | Lane | Signals |
 | --- | --- |
@@ -254,6 +254,7 @@ overlay.
 | `semantic_lane` | prompt injection, system prompt extraction, data exfiltration, safety bypass, destructive commands |
 | `similarity_lane` | Armorer-owned trainable development exemplars |
 | `policy_lane` | `eval_surface`, `trace_stage`, `tool_name`, destination, policy action |
+| `review_lane` | lower-threshold escalation signals for high-risk agent/tool boundaries |
 | `learning_lane` | local allow/block/review feedback stored outside the repo |
 
 Common reasons:
@@ -268,6 +269,12 @@ semantic:safety_bypass
 semantic:destructive_command
 policy:dangerous_tool_call
 policy:credential_disclosure
+review:prompt_injection
+review:system_prompt_extraction
+review:data_exfiltration
+review:sensitive_data_request
+review:safety_bypass
+review:destructive_command
 learning:local_allow_match
 learning:local_block_match
 learning:local_review_match
@@ -410,9 +417,16 @@ In a source checkout, the wrapper can use `target/release/armorer-guard` after
 
 ## Model
 
-Armorer Guard embeds the runtime-native classifier coefficients in
-`src/semantic_classifier_native.tsv`, so normal builds do not need a network
-fetch.
+Armorer Guard embeds runtime-native classifier coefficients in
+`src/semantic_classifier_native.tsv` and the profile-only fallback model in
+`src/semantic_classifier_profile_native.tsv`, so normal builds do not need a
+network fetch.
+
+The production `agent-runtime` path uses the word TF-IDF model plus rules. The
+high-recall `jailbreak-benchmark`/`strict` profiles can additionally use the
+`char-wb-public-distill-30k-v1` fallback, which is trained from public benchmark
+train splits, synthetic benign controls, and Armorer-owned hard-negative/profile
+rows. Heldout metrics are reported separately in `docs/RESULTS.md`.
 
 Full model artifacts live on Hugging Face:
 
@@ -421,6 +435,7 @@ https://huggingface.co/armorer-labs/armorer-guard-semantic-classifier
 Artifacts:
 
 - `semantic_classifier_native.tsv`
+- `semantic_classifier_profile_native.tsv`
 - `semantic_classifier.onnx`
 - `semantic_classifier.joblib`
 - `labels.json`

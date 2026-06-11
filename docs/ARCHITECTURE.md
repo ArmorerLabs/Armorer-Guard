@@ -30,13 +30,26 @@ Source of truth:
 Supported modes:
 
 - `inspect`
+- `inspect-json`
+- `inspect-jsonl`
 - `sanitize`
 - `detect-credentials`
+- `semantic-scores`
+- `mcp-proxy`
+- `feedback-record`
+- `feedback-export`
+- `feedback-stats`
+- `version`
 - `capabilities`
 
 The binary reads request text from `stdin` for scanner modes and writes JSON to
 `stdout`. The `capabilities` mode emits the Rust-owned machine-readable scanner
 contract.
+
+`inspect-jsonl` is the preferred hot-path sidecar shape: every stdin line is an
+`inspect-json` request, and every stdout line is a verdict. This keeps the Rust
+scanner process warm for benchmark runners, MCP wrappers, and managed agent
+runtimes instead of paying process startup per scan.
 
 ## Python Package
 
@@ -68,7 +81,7 @@ Disallowed Python responsibilities:
 
 ## Detection Lanes
 
-Armorer Guard uses five Rust-owned lanes.
+Armorer Guard uses Rust-owned lanes.
 
 `credential_lane`
 
@@ -77,9 +90,15 @@ suggested key naming.
 
 `semantic_lane`
 
-Local semantic/rule scoring for non-token threats. This is currently lexical and
-rule based. Future local model work should still be implemented behind the Rust
-binary boundary.
+Local semantic/rule scoring for non-token threats. The production path uses
+deterministic rules plus a Rust-native word TF-IDF linear classifier. The
+`jailbreak-benchmark` profile can add a fallback Rust-native char-wb linear
+classifier after the normal rules and word model leave an input clear. The
+current fallback is `char-wb-public-distill-30k-v1`, trained from public benchmark
+train splits, synthetic benign controls, and Armorer-owned hard-negative/profile
+rows; production `agent-runtime` does not use it unless the caller explicitly
+chooses a high-recall profile. Future local model work should still be
+implemented behind the Rust binary boundary.
 
 `similarity_lane`
 
@@ -91,6 +110,14 @@ Local token-set similarity against Armorer-owned development exemplars from
 
 Runtime/action-aware labels for dangerous actions such as credential disclosure,
 destructive operations, and bypassing guard controls.
+
+`review_lane`
+
+Lower-threshold escalation for high-risk boundaries such as retrieved tool
+output, MCP/tool-call arguments, outbound sends, and memory writes. Review
+reasons are suspicious signals for hosts that support `warn` or
+`require_review`, but the MCP proxy does not treat `review:*` reasons as hard
+block reasons by themselves.
 
 `learning_lane`
 
