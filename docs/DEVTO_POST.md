@@ -154,4 +154,4 @@ Repo:
 
 https://github.com/ArmorerLabs/Armorer-Guard
 
-The project is released under the MIT License.
+The repo and runtime code are released under the MIT License. Public model and demo artifacts can have separate metadata, so I avoid implying every artifact shares the same license posture without checking first.
