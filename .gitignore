@@ -80,6 +80,8 @@ models/
 training/
 results/
 src/semantic_classifier.onnx
+docs/OUTREACH_*.md
+.playwright-cli/
 
 # Jupyter Notebook
 .ipynb_checkpoints

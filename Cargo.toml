@@ -21,8 +21,6 @@ include = [
     "/docs/BENCHMARKS.md",
     "/docs/CAPABILITIES.md",
     "/docs/COMPARISON.md",
-    "/docs/HF_DEMO_RELEASE_CHECKLIST.md",
-    "/docs/MARKETING_PLAYBOOK.md",
     "/docs/RELEASE_NOTES_V030.md",
     "/docs/RESULTS.md",
     "/docs/SECURITY_MODEL.md",
