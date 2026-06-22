@@ -292,6 +292,7 @@ Local feedback is stored outside the repository:
 ```text
 ~/.armorer-guard/feedback/events.jsonl
 ~/.armorer-guard/feedback/local_exemplars.tsv
+~/.armorer-guard/feedback/online_weights.json
 ```
 
 Use `ARMORER_GUARD_HOME` to isolate feedback for tests, demos, or deployments:
@@ -312,9 +313,11 @@ cat <<'JSON' | target/release/armorer-guard feedback-record
 JSON
 ```
 
-Then inspect again. A strong local allow match can suppress eligible semantic
-reasons and add `learning:local_allow_match`; credential disclosure and
-dangerous tool-call policy reasons cannot be suppressed by local feedback.
+When `reviewed=true` and `can_train=true`, `feedback-record` updates the local
+online weight overlay before it returns. Then inspect again. A strong local
+allow match can suppress eligible semantic reasons and add
+`learning:local_allow_match`; credential disclosure and dangerous tool-call
+policy reasons cannot be suppressed by local feedback.
 
 Export reviewed rows for offline training:
 

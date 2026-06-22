@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::{self, OpenOptions};
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
@@ -12,7 +12,7 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 
 const MODEL_VERSION: &str = "word-sgd-native-v1";
-const LEARNING_VERSION: &str = "local-learning-v1";
+const LEARNING_VERSION: &str = "local-learning-v2";
 const PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
 const LONG_INPUT_THRESHOLD_BYTES: usize = 6_144;
 const LONG_INPUT_WINDOW_BYTES: usize = 3_072;
@@ -3755,7 +3755,10 @@ fn apply_tool_event_policy(response: &mut InspectResponse, tool_event: &Value) {
     response.reasons.sort();
     response.rule_ids.sort();
     response.affected_paths.sort();
-    response.suspicious = response.reasons.iter().any(|reason| suspicious_reason(reason));
+    response.suspicious = response
+        .reasons
+        .iter()
+        .any(|reason| suspicious_reason(reason));
 }
 
 fn tool_event_policy_findings(tool_event: &Value) -> Vec<ToolEventPolicyFinding> {
@@ -3802,23 +3805,35 @@ fn tool_event_policy_findings(tool_event: &Value) -> Vec<ToolEventPolicyFinding>
 
     let sensitive_paths = paths_matching(&paths, |path| {
         let p = path.to_ascii_lowercase();
-        contains_any(&p, &[
-            "/.ssh",
-            "/.gnupg",
-            "/.aws",
-            "/.kube",
-            "/.docker",
-            "auth.json",
-            "armorer-vault.json",
-            "armorer-vault.key",
-            "vault.json",
-            "/.env",
-            "id_rsa",
-            "id_ed25519",
-        ])
+        contains_any(
+            &p,
+            &[
+                "/.ssh",
+                "/.gnupg",
+                "/.aws",
+                "/.kube",
+                "/.docker",
+                "auth.json",
+                "armorer-vault.json",
+                "armorer-vault.key",
+                "vault.json",
+                "/.env",
+                "id_rsa",
+                "id_ed25519",
+            ],
+        )
     });
     if !sensitive_paths.is_empty()
-        || contains_any(&lowered_command, &["auth.json", "armorer-vault", "id_rsa", "id_ed25519", "printenv"])
+        || contains_any(
+            &lowered_command,
+            &[
+                "auth.json",
+                "armorer-vault",
+                "id_rsa",
+                "id_ed25519",
+                "printenv",
+            ],
+        )
     {
         findings.push(ToolEventPolicyFinding {
             reason: "policy:credential_disclosure",
@@ -3828,16 +3843,19 @@ fn tool_event_policy_findings(tool_event: &Value) -> Vec<ToolEventPolicyFinding>
         });
     }
 
-    if contains_any(&lowered, &[
-        "dangerously-bypass",
-        "sandbox=danger-full-access",
-        "sandbox:danger-full-access",
-        "approval_policy=never",
-        "approval-policy=never",
-        "require_escalated",
-        "--no-sandbox",
-        "disable_sandbox",
-    ]) {
+    if contains_any(
+        &lowered,
+        &[
+            "dangerously-bypass",
+            "sandbox=danger-full-access",
+            "sandbox:danger-full-access",
+            "approval_policy=never",
+            "approval-policy=never",
+            "require_escalated",
+            "--no-sandbox",
+            "disable_sandbox",
+        ],
+    ) {
         findings.push(ToolEventPolicyFinding {
             reason: "policy:dangerous_tool_call",
             rule_id: "tool_event:sandbox_bypass_attempt",
@@ -3846,7 +3864,20 @@ fn tool_event_policy_findings(tool_event: &Value) -> Vec<ToolEventPolicyFinding>
         });
     }
 
-    if contains_any(&lowered_command, &["rm -rf /", "rm -rf ~", "rm -rf $home", "mkfs", "diskutil erase", "shutdown", "reboot", "/proc/self/environ", "/proc/"]) {
+    if contains_any(
+        &lowered_command,
+        &[
+            "rm -rf /",
+            "rm -rf ~",
+            "rm -rf $home",
+            "mkfs",
+            "diskutil erase",
+            "shutdown",
+            "reboot",
+            "/proc/self/environ",
+            "/proc/",
+        ],
+    ) {
         findings.push(ToolEventPolicyFinding {
             reason: "policy:dangerous_tool_call",
             rule_id: "tool_event:dangerous_shell_pattern",
@@ -3855,7 +3886,9 @@ fn tool_event_policy_findings(tool_event: &Value) -> Vec<ToolEventPolicyFinding>
         });
     }
     if (lowered_command.contains("curl") || lowered_command.contains("wget"))
-        && (lowered_command.contains("| sh") || lowered_command.contains("| bash") || lowered_command.contains("| zsh"))
+        && (lowered_command.contains("| sh")
+            || lowered_command.contains("| bash")
+            || lowered_command.contains("| zsh"))
     {
         findings.push(ToolEventPolicyFinding {
             reason: "policy:dangerous_tool_call",
@@ -3867,19 +3900,31 @@ fn tool_event_policy_findings(tool_event: &Value) -> Vec<ToolEventPolicyFinding>
 
     let agent_surface_paths = paths_matching(&paths, |path| {
         let p = path.to_ascii_lowercase();
-        contains_any(&p, &[
-            "agents.md",
-            "skill.md",
-            "mcp.json",
-            ".mcp.json",
-            "/.codex/skills",
-            "/.codex/plugins",
-            "/.claude/settings",
-            "claude_desktop_config.json",
-        ])
+        contains_any(
+            &p,
+            &[
+                "agents.md",
+                "skill.md",
+                "mcp.json",
+                ".mcp.json",
+                "/.codex/skills",
+                "/.codex/plugins",
+                "/.claude/settings",
+                "claude_desktop_config.json",
+            ],
+        )
     });
     if !agent_surface_paths.is_empty()
-        || contains_any(&lowered, &["mcpservers", "request_plugin_install", "tool_search", "agents.md", "skill.md"])
+        || contains_any(
+            &lowered,
+            &[
+                "mcpservers",
+                "request_plugin_install",
+                "tool_search",
+                "agents.md",
+                "skill.md",
+            ],
+        )
     {
         findings.push(ToolEventPolicyFinding {
             reason: "policy:dangerous_tool_call",
@@ -3891,20 +3936,26 @@ fn tool_event_policy_findings(tool_event: &Value) -> Vec<ToolEventPolicyFinding>
 
     let persistence_paths = paths_matching(&paths, |path| {
         let p = path.to_ascii_lowercase();
-        contains_any(&p, &[
-            ".zshrc",
-            ".bashrc",
-            ".bash_profile",
-            ".profile",
-            "library/launchagents",
-            "launchdaemons",
-            "systemd/system",
-            "cron.d",
-            "crontab",
-        ])
+        contains_any(
+            &p,
+            &[
+                ".zshrc",
+                ".bashrc",
+                ".bash_profile",
+                ".profile",
+                "library/launchagents",
+                "launchdaemons",
+                "systemd/system",
+                "cron.d",
+                "crontab",
+            ],
+        )
     });
     if !persistence_paths.is_empty()
-        || contains_any(&lowered_command, &["crontab", "launchctl", "systemctl enable", "pm2 startup"])
+        || contains_any(
+            &lowered_command,
+            &["crontab", "launchctl", "systemctl enable", "pm2 startup"],
+        )
     {
         findings.push(ToolEventPolicyFinding {
             reason: "policy:dangerous_tool_call",
@@ -3916,16 +3967,22 @@ fn tool_event_policy_findings(tool_event: &Value) -> Vec<ToolEventPolicyFinding>
 
     let self_protection_paths = paths_matching(&paths, |path| {
         let p = path.to_ascii_lowercase();
-        contains_any(&p, &[
-            "guard_settings.json",
-            "guard_events.jsonl",
-            "/.armorer/guard",
-            "src/guard.ts",
-            "agent-policy.ts",
-        ])
+        contains_any(
+            &p,
+            &[
+                "guard_settings.json",
+                "guard_events.jsonl",
+                "/.armorer/guard",
+                "src/guard.ts",
+                "agent-policy.ts",
+            ],
+        )
     });
     if !self_protection_paths.is_empty()
-        || contains_any(&lowered, &["guard_enabled=false", "disable guard", "clear guard_events"])
+        || contains_any(
+            &lowered,
+            &["guard_enabled=false", "disable guard", "clear guard_events"],
+        )
     {
         findings.push(ToolEventPolicyFinding {
             reason: "policy:dangerous_tool_call",
@@ -3935,21 +3992,39 @@ fn tool_event_policy_findings(tool_event: &Value) -> Vec<ToolEventPolicyFinding>
         });
     }
 
-    let reads_secret = contains_any(&lowered, &[
-        ".env",
-        "auth.json",
-        "armorer-vault",
-        "vault.json",
-        "id_rsa",
-        "id_ed25519",
-        "openai_api_key",
-        "anthropic_api_key",
-        "telegram_bot_token",
-        "github_token",
-        "process.env",
-    ]) || lowered_paths.iter().any(|path| contains_any(path, &["/.ssh", "/.env", "auth.json", "vault.json"]));
+    let reads_secret = contains_any(
+        &lowered,
+        &[
+            ".env",
+            "auth.json",
+            "armorer-vault",
+            "vault.json",
+            "id_rsa",
+            "id_ed25519",
+            "openai_api_key",
+            "anthropic_api_key",
+            "telegram_bot_token",
+            "github_token",
+            "process.env",
+        ],
+    ) || lowered_paths
+        .iter()
+        .any(|path| contains_any(path, &["/.ssh", "/.env", "auth.json", "vault.json"]));
     let sends_network = (lowered_command.contains("curl") || lowered_command.contains("wget"))
-        && (contains_any(&lowered_command, &["--data", "--form", "-x post", "-x put", "-x patch", "--request post", "--request put", "--request patch"]) || lowered_command.contains("http://") || lowered_command.contains("https://"));
+        && (contains_any(
+            &lowered_command,
+            &[
+                "--data",
+                "--form",
+                "-x post",
+                "-x put",
+                "-x patch",
+                "--request post",
+                "--request put",
+                "--request patch",
+            ],
+        ) || lowered_command.contains("http://")
+            || lowered_command.contains("https://"));
     if reads_secret && sends_network {
         findings.push(ToolEventPolicyFinding {
             reason: "policy:credential_disclosure",
@@ -3972,7 +4047,9 @@ fn tool_event_string(value: &Value, key: &str) -> Option<String> {
 }
 
 fn tool_event_nested_string(value: &Value, parent: &str, key: &str) -> Option<String> {
-    value.get(parent).and_then(|nested| tool_event_string(nested, key))
+    value
+        .get(parent)
+        .and_then(|nested| tool_event_string(nested, key))
 }
 
 fn push_unique(values: &mut Vec<String>, value: String) {
@@ -4002,7 +4079,18 @@ where
 fn sensitive_paths_for_exfil(paths: &[String]) -> Vec<String> {
     paths_matching(paths, |path| {
         let p = path.to_ascii_lowercase();
-        contains_any(&p, &["/.ssh", "/.env", "auth.json", "armorer-vault", "vault.json", "id_rsa", "id_ed25519"])
+        contains_any(
+            &p,
+            &[
+                "/.ssh",
+                "/.env",
+                "auth.json",
+                "armorer-vault",
+                "vault.json",
+                "id_rsa",
+                "id_ed25519",
+            ],
+        )
     })
 }
 
@@ -4067,12 +4155,36 @@ struct FeedbackEvent {
     reviewed: bool,
     can_train: bool,
     note: String,
+    #[serde(default)]
+    online_weight_updated: bool,
+    #[serde(default)]
+    online_weight_revision: u64,
 }
 
 #[derive(Debug, Clone)]
 struct LocalLearningExemplar {
     action: String,
     text: String,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+struct OnlineLearningWeights {
+    schema_version: String,
+    revision: u64,
+    updated_at_unix: u64,
+    weights: Vec<OnlineLearningWeight>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct OnlineLearningWeight {
+    input_hash: String,
+    action: String,
+    human_label: String,
+    desired_action: String,
+    weight: f64,
+    tokens: Vec<String>,
+    provenance: String,
+    updated_at_unix: u64,
 }
 
 fn unix_timestamp_seconds() -> u64 {
@@ -4127,6 +4239,10 @@ fn feedback_events_path(home: &Path) -> PathBuf {
 
 fn feedback_exemplars_path(home: &Path) -> PathBuf {
     feedback_dir(home).join("local_exemplars.tsv")
+}
+
+fn feedback_online_weights_path(home: &Path) -> PathBuf {
+    feedback_dir(home).join("online_weights.json")
 }
 
 fn valid_feedback_label(value: &str) -> bool {
@@ -4232,6 +4348,8 @@ fn feedback_event_from_input(input: FeedbackInput) -> Result<FeedbackEvent, Stri
         reviewed: input.reviewed,
         can_train: input.can_train,
         note: sanitize_feedback_note(&input.note),
+        online_weight_updated: false,
+        online_weight_revision: 0,
     })
 }
 
@@ -4267,10 +4385,103 @@ fn append_local_exemplar(home: &Path, event: &FeedbackEvent) -> Result<bool, Str
     Ok(true)
 }
 
+fn learning_tokens_for_text(text: &str) -> Vec<String> {
+    let mut seen = HashSet::new();
+    let mut out = Vec::new();
+    for token in tokens(&normalize_detection_text(text)) {
+        if token.len() < 2 || token.len() > 80 {
+            continue;
+        }
+        if seen.insert(token.clone()) {
+            out.push(token);
+        }
+        if out.len() >= 96 {
+            break;
+        }
+    }
+    out
+}
+
+fn load_online_learning_weights(home: &Path) -> OnlineLearningWeights {
+    let path = feedback_online_weights_path(home);
+    let Ok(contents) = fs::read_to_string(path) else {
+        return OnlineLearningWeights {
+            schema_version: "online-learning-weights.v1".to_string(),
+            ..OnlineLearningWeights::default()
+        };
+    };
+    serde_json::from_str::<OnlineLearningWeights>(&contents).unwrap_or_else(|_| {
+        OnlineLearningWeights {
+            schema_version: "online-learning-weights.v1".to_string(),
+            ..OnlineLearningWeights::default()
+        }
+    })
+}
+
+fn save_online_learning_weights(
+    home: &Path,
+    weights: &OnlineLearningWeights,
+) -> Result<(), String> {
+    let path = feedback_online_weights_path(home);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|err| format!("failed to create feedback dir: {err}"))?;
+    }
+    let payload = serde_json::to_string_pretty(weights)
+        .map_err(|err| format!("failed to serialize online learning weights: {err}"))?;
+    fs::write(&path, payload).map_err(|err| format!("failed to write {}: {err}", path.display()))
+}
+
+fn update_online_learning_weights(
+    home: &Path,
+    event: &FeedbackEvent,
+) -> Result<Option<u64>, String> {
+    if !event.reviewed || !event.can_train {
+        return Ok(None);
+    }
+    let Some(action) = learning_action(&event.human_label, &event.desired_action) else {
+        return Ok(None);
+    };
+    let tokens = learning_tokens_for_text(&event.sanitized_excerpt);
+    if tokens.len() < 2 {
+        return Ok(None);
+    }
+
+    let mut store = load_online_learning_weights(home);
+    if store.schema_version.trim().is_empty() {
+        store.schema_version = "online-learning-weights.v1".to_string();
+    }
+    store
+        .weights
+        .retain(|weight| weight.input_hash != event.input_hash || weight.action != action);
+    store.revision = store.revision.saturating_add(1);
+    store.updated_at_unix = unix_timestamp_seconds();
+    store.weights.push(OnlineLearningWeight {
+        input_hash: event.input_hash.clone(),
+        action: action.to_string(),
+        human_label: event.human_label.clone(),
+        desired_action: event.desired_action.clone(),
+        weight: 1.0,
+        tokens,
+        provenance: event.provenance.clone(),
+        updated_at_unix: store.updated_at_unix,
+    });
+    if store.weights.len() > 512 {
+        let drop_count = store.weights.len() - 512;
+        store.weights.drain(0..drop_count);
+    }
+    save_online_learning_weights(home, &store)?;
+    Ok(Some(store.revision))
+}
+
 fn record_feedback(input: &str, home: &Path) -> Result<FeedbackEvent, String> {
     let feedback_input = serde_json::from_str::<FeedbackInput>(input)
         .map_err(|err| format!("invalid feedback payload: {err}"))?;
-    let event = feedback_event_from_input(feedback_input)?;
+    let mut event = feedback_event_from_input(feedback_input)?;
+    if let Some(revision) = update_online_learning_weights(home, &event)? {
+        event.online_weight_updated = true;
+        event.online_weight_revision = revision;
+    }
     let line = serde_json::to_string(&event)
         .map_err(|err| format!("failed to serialize feedback event: {err}"))?;
     append_jsonl(&feedback_events_path(home), &line)?;
@@ -4347,16 +4558,55 @@ fn best_learning_matches(text: &str, exemplars: &[LocalLearningExemplar]) -> (f6
     (allow_score, block_score, review_score)
 }
 
-fn apply_learning_overlay_with_exemplars(
+fn weighted_token_similarity(input: &[String], learned: &[String]) -> f64 {
+    if input.is_empty() || learned.is_empty() {
+        return 0.0;
+    }
+    let input_set = input.iter().collect::<HashSet<_>>();
+    let overlap = learned
+        .iter()
+        .filter(|token| input_set.contains(token))
+        .count() as f64;
+    if overlap <= 0.0 {
+        return 0.0;
+    }
+    overlap / ((input.len() as f64 * learned.len() as f64).sqrt())
+}
+
+fn best_online_weight_matches(text: &str, weights: &OnlineLearningWeights) -> (f64, f64, f64) {
+    let input = learning_tokens_for_text(text);
+    let mut allow_score = 0.0f64;
+    let mut block_score = 0.0f64;
+    let mut review_score = 0.0f64;
+    for weight in &weights.weights {
+        let score = weighted_token_similarity(&input, &weight.tokens) * weight.weight.max(0.0);
+        match weight.action.as_str() {
+            "allow" => allow_score = allow_score.max(score),
+            "block" => block_score = block_score.max(score),
+            "review" => review_score = review_score.max(score),
+            _ => {}
+        }
+    }
+    (allow_score, block_score, review_score)
+}
+
+fn apply_learning_overlay_with_sources(
     text: &str,
     mut reasons: Vec<String>,
     mut confidence: f64,
     exemplars: &[LocalLearningExemplar],
+    online_weights: &OnlineLearningWeights,
 ) -> (Vec<String>, f64) {
-    if exemplars.is_empty() {
+    if exemplars.is_empty() && online_weights.weights.is_empty() {
         return (reasons, confidence);
     }
-    let (allow_score, block_score, review_score) = best_learning_matches(text, exemplars);
+    let (exemplar_allow_score, exemplar_block_score, exemplar_review_score) =
+        best_learning_matches(text, exemplars);
+    let (weight_allow_score, weight_block_score, weight_review_score) =
+        best_online_weight_matches(text, online_weights);
+    let allow_score = exemplar_allow_score.max(weight_allow_score);
+    let block_score = exemplar_block_score.max(weight_block_score);
+    let review_score = exemplar_review_score.max(weight_review_score);
     const LEARNING_MATCH_THRESHOLD: f64 = 0.55;
     let has_protected_reason = reasons.iter().any(|reason| protected_reason(reason));
 
@@ -4378,23 +4628,42 @@ fn apply_learning_overlay_with_exemplars(
     (reasons, confidence)
 }
 
+#[cfg(test)]
+fn apply_learning_overlay_with_exemplars(
+    text: &str,
+    reasons: Vec<String>,
+    confidence: f64,
+    exemplars: &[LocalLearningExemplar],
+) -> (Vec<String>, f64) {
+    apply_learning_overlay_with_sources(
+        text,
+        reasons,
+        confidence,
+        exemplars,
+        &OnlineLearningWeights::default(),
+    )
+}
+
 fn apply_learning_overlay(text: &str, reasons: Vec<String>, confidence: f64) -> (Vec<String>, f64) {
     let Some(home) = optional_armorer_guard_home() else {
         return (reasons, confidence);
     };
     let exemplars = load_local_exemplars(&home);
-    apply_learning_overlay_with_exemplars(text, reasons, confidence, &exemplars)
+    let online_weights = load_online_learning_weights(&home);
+    apply_learning_overlay_with_sources(text, reasons, confidence, &exemplars, &online_weights)
 }
 
 fn feedback_record_json(event: &FeedbackEvent) -> String {
     format!(
-        "{{\"recorded\":true,\"scan_id\":\"{}\",\"input_hash\":\"{}\",\"label\":\"{}\",\"desired_action\":\"{}\",\"can_train\":{},\"reviewed\":{}}}",
+        "{{\"recorded\":true,\"scan_id\":\"{}\",\"input_hash\":\"{}\",\"label\":\"{}\",\"desired_action\":\"{}\",\"can_train\":{},\"reviewed\":{},\"online_weight_updated\":{},\"online_weight_revision\":{}}}",
         json_escape(&event.scan_id),
         json_escape(&event.input_hash),
         json_escape(&event.human_label),
         json_escape(&event.desired_action),
         if event.can_train { "true" } else { "false" },
         if event.reviewed { "true" } else { "false" },
+        if event.online_weight_updated { "true" } else { "false" },
+        event.online_weight_revision,
     )
 }
 
@@ -4410,6 +4679,7 @@ fn feedback_export_jsonl(home: &Path, reviewed_only: bool) -> String {
 fn feedback_stats_json(home: &Path) -> String {
     let events = load_feedback_events(home);
     let exemplars = load_local_exemplars(home);
+    let online_weights = load_online_learning_weights(home);
     let mut labels: HashMap<String, usize> = HashMap::new();
     let mut desired_actions: HashMap<String, usize> = HashMap::new();
     let mut reviewed = 0usize;
@@ -4436,9 +4706,11 @@ fn feedback_stats_json(home: &Path) -> String {
             .join(",")
     }
     format!(
-        "{{\"events\":{},\"local_exemplars\":{},\"reviewed\":{},\"can_train\":{},\"labels\":{{{}}},\"desired_actions\":{{{}}}}}",
+        "{{\"events\":{},\"local_exemplars\":{},\"online_weights\":{},\"online_weight_revision\":{},\"reviewed\":{},\"can_train\":{},\"labels\":{{{}}},\"desired_actions\":{{{}}}}}",
         events.len(),
         exemplars.len(),
+        online_weights.weights.len(),
+        online_weights.revision,
         reviewed,
         can_train,
         counts_json(&labels),
@@ -4733,7 +5005,7 @@ fn run_mcp_proxy(args: &[String]) -> Result<i32, String> {
 }
 
 fn capabilities_json() -> &'static str {
-    r#"{"name":"Armorer Guard","implementation_language":"rust","runtime_model":"local_first_no_network","public_contract":["inspect_input","inspect_output","sanitize_text","detect_credentials","detection_profile"],"cli_modes":["inspect","inspect-json","inspect-jsonl","sanitize","detect-credentials","semantic-scores","version","mcp-proxy","feedback-record","feedback-export","feedback-stats","capabilities"],"lanes":[{"id":"credential_lane","status":"active","description":"Deterministic credential recognition, redaction, capture, provider type inference, and suggested environment key names.","reasons":["detected:credential"],"credential_types":["notion","github","openrouter","openai","gemini","telegram_bot","generic_secret"]},{"id":"semantic_lane","status":"active","description":"Hybrid local semantic detection: deterministic rules plus bundled native Rust TF-IDF linear classifiers for non-token prompt-injection, exfiltration, safety-bypass, destructive-command, system-prompt-extraction, and sensitive-data request classes. Classifier predictions use per-category thresholds and context discounts so retrieved content, model outputs, and agent actions are scored differently from ordinary chat. Exported native models can use metadata-driven word, char, or char-wb n-grams. Long and HTML-like inputs also get bounded multi-view scanning over stable windows and a structural HTML view.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"],"model":{"format":"native_rust_tfidf_linear","name":"word-sgd-native-v1","profile_fallback":"char-wb-public-distill-30k-v1","thresholds":{"prompt_injection":0.78,"system_prompt_extraction":0.76,"data_exfiltration":0.74,"sensitive_data_request":0.76,"safety_bypass":0.76,"destructive_command":0.72},"training_source":"production word model uses can_train=true private development corpus; profile fallback uses public train splits, synthetic benign controls, and Armorer-owned hard-negative/profile rows","source_model":"models/semantic_experiments/word-sgd-onnx-t014/semantic_classifier.joblib","profile_source_model":"models/semantic_experiments/char-wb-public-distill-30k-v1/semantic_classifier.joblib"}},{"id":"batch_lane","status":"active","description":"Persistent JSONL scanner mode for low-latency batch evaluation and sidecar integrations. Each stdin line is an inspect-json request and each stdout line is a verdict.","cli_mode":"inspect-jsonl"},{"id":"similarity_lane","status":"active","description":"Local token-set similarity against Armorer-owned can_train=true development exemplars from src/dev_exemplars.tsv. Eval rows are never indexed.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"]},{"id":"policy_lane","status":"active","description":"Runtime/action-aware policy labels from structured context: eval_surface, trace_stage, artifact_kind, policy_action, policy_scope, tool_name, and destination.","reasons":["policy:credential_disclosure","policy:dangerous_tool_call"]},{"id":"profile_lane","status":"active","description":"Optional detection_profile context/CLI setting. agent-runtime is the production default; jailbreak-benchmark and strict increase generic jailbreak recall without changing default hot-path behavior. The jailbreak-benchmark profile adds a public-distilled char-wb native model only after normal rules and the word model leave an input clear.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:safety_bypass"]},{"id":"review_lane","status":"active","description":"Lower-threshold escalation for high-risk runtime boundaries. Review reasons improve detection recall for retrieved tool output, MCP/tool-call arguments, outbound sends, and memory writes without becoming MCP proxy hard-block reasons by themselves.","reasons":["review:prompt_injection","review:system_prompt_extraction","review:data_exfiltration","review:sensitive_data_request","review:safety_bypass","review:destructive_command"]},{"id":"mcp_proxy_lane","status":"active","description":"Line-delimited stdio JSON-RPC proxy that gates MCP tools/call arguments before forwarding them to the wrapped server.","reasons":["detected:credential","policy:credential_disclosure","policy:dangerous_tool_call","semantic:data_exfiltration","semantic:prompt_injection","learning:local_block_match"]},{"id":"learning_lane","status":"active","description":"Rust-owned local feedback overlay from ~/.armorer-guard/feedback or ARMORER_GUARD_HOME. It can add local block/review reasons or suppress eligible semantic reasons for strong allow matches, but it never suppresses credentials or dangerous policy reasons and never mutates model weights.","reasons":["learning:local_allow_match","learning:local_block_match","learning:local_review_match"],"storage":["feedback/events.jsonl","feedback/local_exemplars.tsv"]}],"confidence_policy":{"credential_detection":"0.75-0.99 depending on provider specificity","detection_profiles":["agent-runtime","jailbreak-benchmark","strict"],"context_aware_thresholds":"Agent actions, retrieved content, model outputs, sensitive scopes, and dangerous policy actions lower semantic thresholds only for matching categories.","review_thresholds":"High-risk boundaries also emit review:* reasons at lower per-category thresholds so hosts can warn or require review without forcing a hard block.","sensitive_data_request":"0.74 observe/escalate by default, blockable when context or classifier confidence raises risk","prompt_injection":"0.88 for rules plus classifier score for model-only hits","system_prompt_extraction":"0.88 for rules plus classifier score for model-only hits","data_exfiltration":"0.92 for rules plus classifier score for model-only hits","safety_bypass":"0.91 for rules plus classifier score for model-only hits","destructive_command":"0.94 for rules plus classifier score for model-only hits","local_block_match":"at least 0.86","local_review_match":"at least 0.76"},"boundaries":{"network_calls":"none","python_detection_logic":"none; Python package shells out to the Rust binary","model_weights":"bundled native TSV linear model coefficients in the Rust binary; local learning does not mutate src/semantic_classifier_native.tsv, src/semantic_classifier_profile_native.tsv, or src/dev_exemplars.tsv","corpus_policy":"Production agent-runtime training remains private-development and can_train=true. The high-recall jailbreak-benchmark profile may use public train splits and synthetic controls, but heldout/test metrics must be reported separately; unreviewed feedback must not train public models."},"known_limitations":["Native classifiers are lightweight TF-IDF linear models, not transformer classifiers.","Similarity lane uses lightweight Jaccard token overlap and should be replaced or augmented by local embeddings.","MCP proxy v1 expects line-delimited JSON-RPC over stdio and does not implement Content-Length framed transport.","Context-aware policy consumes structured metadata when provided; text-only callers still use the legacy path.","The binary does not perform tool execution; it only classifies, redacts, proxies, and reports reasons."]}"#
+    r#"{"name":"Armorer Guard","implementation_language":"rust","runtime_model":"local_first_no_network","public_contract":["inspect_input","inspect_output","sanitize_text","detect_credentials","detection_profile"],"cli_modes":["inspect","inspect-json","inspect-jsonl","sanitize","detect-credentials","semantic-scores","version","mcp-proxy","feedback-record","feedback-export","feedback-stats","capabilities"],"lanes":[{"id":"credential_lane","status":"active","description":"Deterministic credential recognition, redaction, capture, provider type inference, and suggested environment key names.","reasons":["detected:credential"],"credential_types":["notion","github","openrouter","openai","gemini","telegram_bot","generic_secret"]},{"id":"semantic_lane","status":"active","description":"Hybrid local semantic detection: deterministic rules plus bundled native Rust TF-IDF linear classifiers for non-token prompt-injection, exfiltration, safety-bypass, destructive-command, system-prompt-extraction, and sensitive-data request classes. Classifier predictions use per-category thresholds and context discounts so retrieved content, model outputs, and agent actions are scored differently from ordinary chat. Exported native models can use metadata-driven word, char, or char-wb n-grams. Long and HTML-like inputs also get bounded multi-view scanning over stable windows and a structural HTML view.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"],"model":{"format":"native_rust_tfidf_linear","name":"word-sgd-native-v1","profile_fallback":"char-wb-public-distill-30k-v1","thresholds":{"prompt_injection":0.78,"system_prompt_extraction":0.76,"data_exfiltration":0.74,"sensitive_data_request":0.76,"safety_bypass":0.76,"destructive_command":0.72},"training_source":"production word model uses can_train=true private development corpus; profile fallback uses public train splits, synthetic benign controls, and Armorer-owned hard-negative/profile rows","source_model":"models/semantic_experiments/word-sgd-onnx-t014/semantic_classifier.joblib","profile_source_model":"models/semantic_experiments/char-wb-public-distill-30k-v1/semantic_classifier.joblib"}},{"id":"batch_lane","status":"active","description":"Persistent JSONL scanner mode for low-latency batch evaluation and sidecar integrations. Each stdin line is an inspect-json request and each stdout line is a verdict.","cli_mode":"inspect-jsonl"},{"id":"similarity_lane","status":"active","description":"Local token-set similarity against Armorer-owned can_train=true development exemplars from src/dev_exemplars.tsv. Eval rows are never indexed.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:data_exfiltration","semantic:sensitive_data_request","semantic:safety_bypass","semantic:destructive_command"]},{"id":"policy_lane","status":"active","description":"Runtime/action-aware policy labels from structured context: eval_surface, trace_stage, artifact_kind, policy_action, policy_scope, tool_name, and destination.","reasons":["policy:credential_disclosure","policy:dangerous_tool_call"]},{"id":"profile_lane","status":"active","description":"Optional detection_profile context/CLI setting. agent-runtime is the production default; jailbreak-benchmark and strict increase generic jailbreak recall without changing default hot-path behavior. The jailbreak-benchmark profile adds a public-distilled char-wb native model only after normal rules and the word model leave an input clear.","reasons":["semantic:prompt_injection","semantic:system_prompt_extraction","semantic:safety_bypass"]},{"id":"review_lane","status":"active","description":"Lower-threshold escalation for high-risk runtime boundaries. Review reasons improve detection recall for retrieved tool output, MCP/tool-call arguments, outbound sends, and memory writes without becoming MCP proxy hard-block reasons by themselves.","reasons":["review:prompt_injection","review:system_prompt_extraction","review:data_exfiltration","review:sensitive_data_request","review:safety_bypass","review:destructive_command"]},{"id":"mcp_proxy_lane","status":"active","description":"Line-delimited stdio JSON-RPC proxy that gates MCP tools/call arguments before forwarding them to the wrapped server.","reasons":["detected:credential","policy:credential_disclosure","policy:dangerous_tool_call","semantic:data_exfiltration","semantic:prompt_injection","learning:local_block_match"]},{"id":"learning_lane","status":"active","description":"Rust-owned local feedback overlay from ~/.armorer-guard/feedback or ARMORER_GUARD_HOME. It can add local block/review reasons or suppress eligible semantic reasons for strong allow matches, and reviewed can_train=true feedback updates local online weights synchronously. It never suppresses credentials or dangerous policy reasons.","reasons":["learning:local_allow_match","learning:local_block_match","learning:local_review_match"],"storage":["feedback/events.jsonl","feedback/local_exemplars.tsv","feedback/online_weights.json"]}],"confidence_policy":{"credential_detection":"0.75-0.99 depending on provider specificity","detection_profiles":["agent-runtime","jailbreak-benchmark","strict"],"context_aware_thresholds":"Agent actions, retrieved content, model outputs, sensitive scopes, and dangerous policy actions lower semantic thresholds only for matching categories.","review_thresholds":"High-risk boundaries also emit review:* reasons at lower per-category thresholds so hosts can warn or require review without forcing a hard block.","sensitive_data_request":"0.74 observe/escalate by default, blockable when context or classifier confidence raises risk","prompt_injection":"0.88 for rules plus classifier score for model-only hits","system_prompt_extraction":"0.88 for rules plus classifier score for model-only hits","data_exfiltration":"0.92 for rules plus classifier score for model-only hits","safety_bypass":"0.91 for rules plus classifier score for model-only hits","destructive_command":"0.94 for rules plus classifier score for model-only hits","local_block_match":"at least 0.86","local_review_match":"at least 0.76"},"boundaries":{"network_calls":"none","python_detection_logic":"none; Python package shells out to the Rust binary","model_weights":"bundled native TSV linear model coefficients in the Rust binary plus installation-local online weights in feedback/online_weights.json; local learning does not mutate src/semantic_classifier_native.tsv, src/semantic_classifier_profile_native.tsv, or src/dev_exemplars.tsv","corpus_policy":"Production agent-runtime training remains private-development and can_train=true. The high-recall jailbreak-benchmark profile may use public train splits and synthetic controls, but heldout/test metrics must be reported separately; unreviewed feedback must not train public models."},"known_limitations":["Native classifiers are lightweight TF-IDF linear models, not transformer classifiers.","Similarity lane uses lightweight Jaccard token overlap and should be replaced or augmented by local embeddings.","MCP proxy v1 expects line-delimited JSON-RPC over stdio and does not implement Content-Length framed transport.","Context-aware policy consumes structured metadata when provided; text-only callers still use the legacy path.","The binary does not perform tool execution; it only classifies, redacts, proxies, and reports reasons."]}"#
 }
 
 fn read_stdin_or_exit() -> String {
@@ -5966,11 +6238,111 @@ mod tests {
         let stats = feedback_stats_json(&home);
         assert!(stats.contains("\"events\":1"));
         assert!(stats.contains("\"local_exemplars\":1"));
+        assert!(stats.contains("\"online_weights\":0"));
         assert!(stats.contains("\"false_positive\":1"));
 
         let exported = feedback_export_jsonl(&home, false);
         assert!(exported.contains("\"human_label\":\"false_positive\""));
         assert_eq!(feedback_export_jsonl(&home, true), "");
+
+        let _ = fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn reviewed_trainable_feedback_updates_online_weights_immediately() {
+        let home = std::env::temp_dir().join(format!(
+            "armorer-guard-online-weights-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let payload = r#"{
+            "text":"benign community moderation note about release coordination",
+            "label":"false_positive",
+            "desired_action":"allow",
+            "reviewed":true,
+            "can_train":true
+        }"#;
+
+        let event = record_feedback(payload, &home).unwrap();
+        assert!(event.online_weight_updated);
+        assert_eq!(event.online_weight_revision, 1);
+        assert!(feedback_online_weights_path(&home).exists());
+
+        let stats = feedback_stats_json(&home);
+        assert!(stats.contains("\"online_weights\":1"));
+        assert!(stats.contains("\"online_weight_revision\":1"));
+
+        let weights = load_online_learning_weights(&home);
+        let (reasons, _) = apply_learning_overlay_with_sources(
+            "benign community moderation note about release coordination",
+            vec!["semantic:prompt_injection".to_string()],
+            0.88,
+            &[],
+            &weights,
+        );
+        assert!(reasons.contains(&"learning:local_allow_match".to_string()));
+        assert!(!reasons.contains(&"semantic:prompt_injection".to_string()));
+
+        let _ = fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn online_allow_weight_cannot_suppress_protected_reasons() {
+        let weights = OnlineLearningWeights {
+            schema_version: "online-learning-weights.v1".to_string(),
+            revision: 1,
+            updated_at_unix: 1,
+            weights: vec![OnlineLearningWeight {
+                input_hash: "sha256:test".to_string(),
+                action: "allow".to_string(),
+                human_label: "false_positive".to_string(),
+                desired_action: "allow".to_string(),
+                weight: 1.0,
+                tokens: learning_tokens_for_text("password value and ignore previous policy"),
+                provenance: "test".to_string(),
+                updated_at_unix: 1,
+            }],
+        };
+
+        let (reasons, _) = apply_learning_overlay_with_sources(
+            "password value and ignore previous policy",
+            vec![
+                "detected:credential".to_string(),
+                "semantic:prompt_injection".to_string(),
+            ],
+            0.88,
+            &[],
+            &weights,
+        );
+
+        assert!(reasons.contains(&"detected:credential".to_string()));
+        assert!(reasons.contains(&"semantic:prompt_injection".to_string()));
+        assert!(!reasons.contains(&"learning:local_allow_match".to_string()));
+    }
+
+    #[test]
+    fn unreviewed_feedback_does_not_update_online_weights() {
+        let home = std::env::temp_dir().join(format!(
+            "armorer-guard-unreviewed-online-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let payload = r#"{
+            "text":"benign runbook",
+            "label":"false_positive",
+            "desired_action":"allow"
+        }"#;
+
+        let event = record_feedback(payload, &home).unwrap();
+        assert!(!event.online_weight_updated);
+        assert_eq!(event.online_weight_revision, 0);
+        assert!(!feedback_online_weights_path(&home).exists());
 
         let _ = fs::remove_dir_all(home);
     }

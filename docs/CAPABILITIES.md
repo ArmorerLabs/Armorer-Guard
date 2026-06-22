@@ -164,9 +164,11 @@ Purpose:
 Current behavior:
 
 - reads local exemplars from `~/.armorer-guard/feedback/local_exemplars.tsv`
+- reads and writes local online weights from `~/.armorer-guard/feedback/online_weights.json`
 - writes feedback events to `~/.armorer-guard/feedback/events.jsonl`
 - supports `ARMORER_GUARD_HOME` for tests and deployments
 - accepts sanitized feedback through `armorer-guard feedback-record`
+- updates the local online weight overlay synchronously for reviewed `can_train=true` feedback
 - exports reviewed rows through `armorer-guard feedback-export --reviewed-only`
 - reports counts through `armorer-guard feedback-stats`
 
@@ -195,6 +197,7 @@ Safety boundaries:
 - local allow feedback cannot suppress `policy:dangerous_tool_call`
 - local learning does not mutate `src/semantic_classifier_native.tsv`
 - local learning does not mutate `src/dev_exemplars.tsv`
+- local online weights are installation-local runtime artifacts, not global model releases
 
 ## Eval Hygiene
 
