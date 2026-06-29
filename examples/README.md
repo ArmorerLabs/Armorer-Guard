@@ -15,6 +15,7 @@ fast local risk signal.
 
 | File | Use case |
 | --- | --- |
+| `openai_agents_guard.py` | Guard OpenAI Agents SDK context ingress and function-tool arguments |
 | `langchain_guard.py` | Wrap LangChain retrieved content and tool arguments |
 | `crewai_guard.py` | Guard a CrewAI tool before execution |
 | `node_middleware.mjs` | Use the Rust binary from Node/Express or Vercel-style handlers |
@@ -38,6 +39,7 @@ Python examples use the local package:
 
 ```bash
 python3 -m pip install -e .
+python3 examples/openai_agents_guard.py
 ```
 
 Node examples call the Rust binary directly and do not require an npm package.
