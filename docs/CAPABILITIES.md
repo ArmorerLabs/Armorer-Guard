@@ -235,6 +235,14 @@ When structured context is present, the policy lane can also escalate:
 - `dangerous_tool_call`, `delete_state`, `force_push`, `drop_database`, `docker_prune`, or `sandbox_escape` -> destructive command
 - `disable_guard`, `sandbox_escape`, or security-control scopes -> safety bypass
 
+### Identity-aware policy evaluation
+
+Use `policy-evaluate` when the host has authenticated identity and delegation
+context. This is separate from semantic text classification and returns a
+deterministic allow, deny, or require-approval receipt bound to the policy
+digest. Fixed invariants cannot be disabled, and adaptive changes are restricted
+to tightening an existing decision.
+
 ## Confidence Policy
 
 Current confidence values are intentionally simple and stable:

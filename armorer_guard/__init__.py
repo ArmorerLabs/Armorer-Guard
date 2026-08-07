@@ -22,7 +22,7 @@ def _source_tree_version() -> str | None:
 try:
     __version__ = _source_tree_version() or version("armorer-guard")
 except PackageNotFoundError:
-    __version__ = "0.3.0"
+    __version__ = "0.4.0"
 
 
 @dataclass(frozen=True)
@@ -137,4 +137,14 @@ def version_info() -> dict[str, Any]:
     payload = _run("version", "")
     if not isinstance(payload, dict):
         raise RuntimeError("Armorer Guard returned an invalid version payload")
+    return payload
+
+
+def evaluate_policy(policy_bundle: dict[str, Any], request: dict[str, Any]) -> dict[str, Any]:
+    payload = _run(
+        "policy-evaluate",
+        json.dumps({"policy_bundle": policy_bundle, "request": request}, separators=(",", ":")),
+    )
+    if not isinstance(payload, dict) or payload.get("authority_expanded") is not False:
+        raise RuntimeError("Armorer Guard returned an invalid policy decision")
     return payload

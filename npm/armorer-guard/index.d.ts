@@ -31,6 +31,20 @@ export interface GuardVerdict {
   [key: string]: unknown;
 }
 
+export interface GuardPolicyDecision {
+  schema_version: "armorer-guard-policy-decision/v1";
+  request_id: string;
+  policy_id: string;
+  policy_revision: number;
+  policy_digest: string;
+  effect: "allow" | "deny" | "require_approval";
+  decision_source: "fixed_invariant" | "adaptive" | "rule" | "default";
+  matched_rule_ids: string[];
+  reason_codes: string[];
+  adaptive_tightening_applied: boolean;
+  authority_expanded: false;
+}
+
 export interface McpProxyOptions extends GuardOptions {
   auditLog?: string;
   stdio?: "inherit" | "pipe" | "ignore";
@@ -59,6 +73,11 @@ export function sanitize(text: string, options?: GuardOptions): Record<string, u
 export function detectCredentials(text: string, options?: GuardOptions): Record<string, unknown> | null;
 export function capabilities(options?: GuardOptions): Record<string, unknown>;
 export function versionInfo(options?: GuardOptions): Record<string, unknown>;
+export function evaluatePolicy(
+  policyBundle: Record<string, unknown>,
+  request: Record<string, unknown>,
+  options?: GuardOptions,
+): GuardPolicyDecision;
 export function mcpProxyCommand(
   serverCommand: string,
   serverArgs?: string[],

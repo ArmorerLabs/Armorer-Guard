@@ -4,7 +4,7 @@ import argparse
 import json
 import sys
 
-from . import capabilities, detect_credentials, inspect_input, sanitize_text, version_info
+from . import capabilities, detect_credentials, evaluate_policy, inspect_input, sanitize_text, version_info
 
 
 def main() -> int:
@@ -12,7 +12,7 @@ def main() -> int:
     parser.add_argument(
         "mode",
         nargs="?",
-        choices=["inspect", "sanitize", "detect-credentials", "capabilities", "version"],
+        choices=["inspect", "sanitize", "detect-credentials", "policy-evaluate", "capabilities", "version"],
         default="inspect",
     )
     args = parser.parse_args()
@@ -29,6 +29,10 @@ def main() -> int:
     if args.mode == "detect-credentials":
         result = detect_credentials(text)
         print(json.dumps(None if result is None else result.__dict__))
+        return 0
+    if args.mode == "policy-evaluate":
+        payload = json.loads(text)
+        print(json.dumps(evaluate_policy(payload["policy_bundle"], payload["request"])))
         return 0
     print(json.dumps(inspect_input(text).__dict__))
     return 0

@@ -103,6 +103,14 @@ export function versionInfo(options = {}) {
   return runGuardJson("version", "", options);
 }
 
+export function evaluatePolicy(policyBundle, request, options = {}) {
+  return runGuardJson(
+    "policy-evaluate",
+    JSON.stringify({ policy_bundle: policyBundle, request }),
+    options,
+  );
+}
+
 export function mcpProxyCommand(serverCommand, serverArgs = [], options = {}) {
   if (!serverCommand) {
     throw new TypeError("serverCommand is required");
