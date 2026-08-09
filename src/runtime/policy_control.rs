@@ -648,17 +648,19 @@ impl PolicyControlPlane {
         if require_chain {
             let active = self.active.layers.get(&bundle.layer);
             match active {
-                Some(active) if bundle.revision > active.revision => {
-                    if bundle.previous_revision != Some(active.revision) {
-                        return Err(
-                            "policy previous_revision does not match active revision".to_string()
-                        );
-                    }
+                Some(active)
+                    if bundle.revision > active.revision
+                        && bundle.previous_revision != Some(active.revision) =>
+                {
+                    return Err(
+                        "policy previous_revision does not match active revision".to_string()
+                    );
                 }
-                Some(active) if bundle.revision == active.revision => {
-                    if bundle.digest()? != active.digest()? {
-                        return Err("active policy revision digest is immutable".to_string());
-                    }
+                Some(active)
+                    if bundle.revision == active.revision
+                        && bundle.digest()? != active.digest()? =>
+                {
+                    return Err("active policy revision digest is immutable".to_string());
                 }
                 Some(_) => {}
                 None if bundle.previous_revision.is_some() => {

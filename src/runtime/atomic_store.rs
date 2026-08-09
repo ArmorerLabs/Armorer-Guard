@@ -1,6 +1,8 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
+#[cfg(windows)]
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::{de::DeserializeOwned, Serialize};
@@ -61,24 +63,88 @@ pub(super) fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), String> {
             .map_err(|error| format!("failed to write {}: {error}", temp.display()))?;
         file.sync_all()
             .map_err(|error| format!("failed to sync {}: {error}", temp.display()))?;
-        fs::rename(&temp, path).map_err(|error| {
-            format!(
-                "failed to atomically activate {} from {}: {error}",
-                path.display(),
-                temp.display()
-            )
-        })?;
-        if let Some(parent) = path.parent() {
-            File::open(parent)
-                .and_then(|directory| directory.sync_all())
-                .map_err(|error| format!("failed to sync {}: {error}", parent.display()))?;
-        }
+        drop(file);
+        activate(&temp, path)?;
         Ok(())
     })();
     if result.is_err() {
         let _ = fs::remove_file(&temp);
     }
     result
+}
+
+#[cfg(unix)]
+fn activate(temp: &Path, path: &Path) -> Result<(), String> {
+    rename(temp, path)?;
+    if let Some(parent) = path.parent() {
+        File::open(parent)
+            .and_then(|directory| directory.sync_all())
+            .map_err(|error| format!("failed to sync {}: {error}", parent.display()))?;
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
+fn activate(temp: &Path, path: &Path) -> Result<(), String> {
+    use std::iter;
+    use std::os::windows::ffi::OsStrExt;
+
+    use windows_sys::Win32::Storage::FileSystem::{
+        MoveFileExW, MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH,
+    };
+
+    let canonical_parent = path
+        .parent()
+        .ok_or_else(|| format!("snapshot path has no parent: {}", path.display()))?
+        .canonicalize()
+        .map_err(|error| format!("failed to resolve snapshot directory: {error}"))?;
+    let source = canonical_sibling(&canonical_parent, temp)?;
+    let destination = canonical_sibling(&canonical_parent, path)?;
+    let source_wide: Vec<u16> = source
+        .as_os_str()
+        .encode_wide()
+        .chain(iter::once(0))
+        .collect();
+    let destination_wide: Vec<u16> = destination
+        .as_os_str()
+        .encode_wide()
+        .chain(iter::once(0))
+        .collect();
+    let flags = MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH;
+    let moved = unsafe { MoveFileExW(source_wide.as_ptr(), destination_wide.as_ptr(), flags) };
+    if moved == 0 {
+        return Err(format!(
+            "failed to atomically activate {} from {}: {}",
+            path.display(),
+            temp.display(),
+            std::io::Error::last_os_error()
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
+fn canonical_sibling(parent: &Path, path: &Path) -> Result<PathBuf, String> {
+    let file_name = path
+        .file_name()
+        .ok_or_else(|| format!("snapshot path has no file name: {}", path.display()))?;
+    Ok(parent.join(file_name))
+}
+
+#[cfg(not(any(unix, windows)))]
+fn activate(temp: &Path, path: &Path) -> Result<(), String> {
+    rename(temp, path)
+}
+
+#[cfg(not(windows))]
+fn rename(temp: &Path, path: &Path) -> Result<(), String> {
+    fs::rename(temp, path).map_err(|error| {
+        format!(
+            "failed to atomically activate {} from {}: {error}",
+            path.display(),
+            temp.display()
+        )
+    })
 }
 
 fn ensure_parent(path: &Path) -> Result<(), String> {
@@ -116,6 +182,10 @@ mod tests {
         atomic_json(&path, &serde_json::json!({"revision": 3})).unwrap();
         let value: serde_json::Value = read_json(&path).unwrap().unwrap();
         assert_eq!(value["revision"], 3);
+
+        atomic_json(&path, &serde_json::json!({"revision": 4})).unwrap();
+        let replaced: serde_json::Value = read_json(&path).unwrap().unwrap();
+        assert_eq!(replaced["revision"], 4);
     }
 
     #[test]

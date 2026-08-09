@@ -64,6 +64,7 @@ reqwest = { version = "0.12", default-features = false, features = ["blocking", 
 
 [target.'cfg(windows)'.dependencies]
 winpipe = { version = "0.1.1", default-features = false }
+windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem"] }
 
 [dev-dependencies]
 rcgen = "0.13"
