@@ -1,6 +1,6 @@
 [package]
 name = "armorer-guard"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 description = "Local-first agent supervision sidecar and capability-enforcement runtime."
 readme = "README.md"

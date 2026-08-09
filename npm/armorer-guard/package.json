@@ -1,6 +1,6 @@
 {
   "name": "@armorerlabs/guard",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Node SDK for the Armorer Guard local supervision sidecar and capability gateway.",
   "type": "module",
   "main": "./index.js",

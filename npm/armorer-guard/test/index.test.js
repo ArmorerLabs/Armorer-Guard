@@ -62,7 +62,7 @@ test("requireSafeToolArgs throws with a verdict for dangerous tool calls", { ski
 test("versionInfo returns package metadata through the Rust binary", { skip: !hasBinary }, () => {
   const version = versionInfo({ bin });
   assert.equal(version.name, "armorer-guard");
-  assert.equal(version.version, "0.4.0");
+  assert.equal(version.version, "0.4.1");
 });
 
 test("evaluatePolicy binds exact identity authority through the Rust binary", { skip: !hasBinary }, () => {

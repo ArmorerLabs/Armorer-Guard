@@ -20,7 +20,7 @@ checksum = "e9d4ee0d472d1cd2e28c97dfa124b3d8d992e10eb0a035f33f5d12e3a177ba3b"
 
 [[package]]
 name = "armorer-guard"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "cap-std",
  "chacha20poly1305",
