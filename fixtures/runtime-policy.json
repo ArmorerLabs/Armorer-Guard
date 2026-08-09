@@ -1,0 +1,46 @@
+{
+  "schema_version": "armorer-guard-policy-bundle/v1",
+  "policy_id": "policy/local-runtime-example",
+  "revision": 1,
+  "default_effect": "deny",
+  "invariants": {
+    "deny_cross_tenant": true,
+    "deny_untrusted_privilege_expansion": true,
+    "deny_guard_tampering": true,
+    "require_signed_delegation": true
+  },
+  "rules": [
+    {
+      "rule_id": "allow-example-read",
+      "priority": 100,
+      "effect": "allow",
+      "subjects": {
+        "agent_ids": ["example-agent"],
+        "identity_ids": ["spiffe://example/agents/example-agent"],
+        "tenant_ids": ["tenant/example"]
+      },
+      "actions": ["record.read"],
+      "resources": {
+        "resource_types": ["record"],
+        "resource_ids": ["*"],
+        "tenant_ids": ["tenant/example"]
+      },
+      "conditions": {
+        "required_capabilities": ["record.read"],
+        "required_purposes": ["example-review"],
+        "required_provenance": "verified",
+        "required_approval_roles": [],
+        "max_delegation_depth": 1,
+        "require_resource_tenant_match": true
+      },
+      "immutable": false
+    }
+  ],
+  "adaptive": {
+    "mode": "tightening_only",
+    "review_risk_threshold": 0.6,
+    "block_risk_threshold": 0.9,
+    "allowed_automatic_effects": ["deny", "require_approval"],
+    "authority_expansion": "human_approval_required"
+  }
+}

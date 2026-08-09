@@ -1,0 +1,71 @@
+{
+  "schema_version": "armorer-guard-policy-bundle/v1",
+  "policy_id": "policy/guarded-agent-example",
+  "revision": 1,
+  "default_effect": "deny",
+  "invariants": {
+    "deny_cross_tenant": true,
+    "deny_untrusted_privilege_expansion": true,
+    "deny_guard_tampering": true,
+    "require_signed_delegation": true
+  },
+  "rules": [
+    {
+      "rule_id": "allow-record-read",
+      "priority": 100,
+      "effect": "allow",
+      "subjects": {
+        "agent_ids": ["demo-agent"],
+        "identity_ids": ["spiffe://demo/agents/demo-agent"],
+        "tenant_ids": ["tenant/demo"]
+      },
+      "actions": ["record.read"],
+      "resources": {
+        "resource_types": ["record"],
+        "resource_ids": ["*"],
+        "tenant_ids": ["tenant/demo"]
+      },
+      "conditions": {
+        "required_capabilities": ["record.read"],
+        "required_purposes": ["demo-review"],
+        "required_provenance": "verified",
+        "required_approval_roles": [],
+        "max_delegation_depth": 1,
+        "require_resource_tenant_match": true
+      },
+      "immutable": false
+    },
+    {
+      "rule_id": "approve-record-delete",
+      "priority": 90,
+      "effect": "allow",
+      "subjects": {
+        "agent_ids": ["demo-agent"],
+        "identity_ids": ["spiffe://demo/agents/demo-agent"],
+        "tenant_ids": ["tenant/demo"]
+      },
+      "actions": ["record.delete"],
+      "resources": {
+        "resource_types": ["record"],
+        "resource_ids": ["*"],
+        "tenant_ids": ["tenant/demo"]
+      },
+      "conditions": {
+        "required_capabilities": ["record.delete"],
+        "required_purposes": ["demo-cleanup"],
+        "required_provenance": "verified",
+        "required_approval_roles": ["record_owner"],
+        "max_delegation_depth": 1,
+        "require_resource_tenant_match": true
+      },
+      "immutable": false
+    }
+  ],
+  "adaptive": {
+    "mode": "tightening_only",
+    "review_risk_threshold": 0.7,
+    "block_risk_threshold": 0.9,
+    "allowed_automatic_effects": ["deny", "require_approval"],
+    "authority_expansion": "human_approval_required"
+  }
+}

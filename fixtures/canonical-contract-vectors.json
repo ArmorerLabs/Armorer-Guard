@@ -1,0 +1,19 @@
+{
+  "schema_version": "armorer-guard-canonical-vectors/v1",
+  "vectors": [
+    {
+      "name": "nested-object-order",
+      "value": {
+        "b": 2,
+        "a": {
+          "d": 4,
+          "c": 3
+        }
+      },
+      "canonical_json": "{\"a\":{\"c\":3,\"d\":4},\"b\":2}",
+      "digest": "sha256:c461c47a913352f1a21e3f2ea49e1fd34754c0dc12cb7366e4636d5e186c6c6e",
+      "hmac_key_hex": "0707070707070707070707070707070707070707070707070707070707070707",
+      "signature": "hmac-sha256:5fc30fc42b3f7ede1825a2aee8806f1dd98988b7f305d69c9764aadd58cc289c"
+    }
+  ]
+}

@@ -5,6 +5,12 @@ your Claude Code setup, but the enforcement shape is the same: serialize the
 tool arguments, scan them with MCP/action context, then block on dangerous
 reasons.
 
+This lightweight hook is scanner-only. It is useful for warnings and basic
+blocking, but it is not an authorization boundary if Claude Code can still call
+the tool or access its credentials through another route. For signed delegation,
+approvals, single-use dispatch tokens, and receipts, connect the hook or MCP
+proxy to the supervision sidecar.
+
 ```bash
 payload='{"text":"{\"command\":\"rm -rf /\"}","context":{"eval_surface":"tool_call_args","trace_stage":"action","tool_name":"Bash"}}'
 printf '%s' "$payload" | armorer-guard inspect-json

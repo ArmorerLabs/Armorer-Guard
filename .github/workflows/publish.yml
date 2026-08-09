@@ -9,6 +9,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  attestations: write
 
 jobs:
   build:
@@ -24,6 +25,25 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Build release service binary
+        run: cargo build --release --locked
+
+      - name: Stage release service binary
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cp target/release/armorer-guard.exe release-artifacts/armorer-guard-windows-x86_64.exe
+          else
+            cp target/release/armorer-guard "release-artifacts/armorer-guard-${RUNNER_OS}-${RUNNER_ARCH}"
+          fi
+
+      - name: Upload service binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: guard-binary-${{ matrix.os }}
+          path: release-artifacts/*
 
       - name: Set up QEMU for Linux arm64 wheels
         if: runner.os == 'Linux'
@@ -59,8 +79,35 @@ jobs:
           pattern: wheel-*
           merge-multiple: true
 
+      - name: Download service binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries
+          pattern: guard-binary-*
+          merge-multiple: true
+
       - name: Publish wheels
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
           skip-existing: true
+
+      - name: Generate artifact checksums
+        run: |
+          find dist binaries -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+
+      - name: Attest wheel provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "dist/**/*.whl"
+
+      - name: Attest service-binary provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "binaries/*"
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-checksums
+          path: SHA256SUMS

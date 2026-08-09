@@ -1,7 +1,7 @@
 # Armorer Guard Architecture
 
-Armorer Guard is an MIT-licensed, local-first security scanner used by
-agent runtimes. The implementation boundary is deliberately simple:
+Armorer Guard is an MIT-licensed, local-first agent supervision and capability
+enforcement runtime. The implementation boundary is deliberately simple:
 
 - Rust owns all detection behavior.
 - Python owns packaging compatibility only.
@@ -32,6 +32,7 @@ Supported modes:
 - `inspect`
 - `inspect-json`
 - `inspect-jsonl`
+- `serve`
 - `sanitize`
 - `detect-credentials`
 - `semantic-scores`
@@ -50,6 +51,22 @@ contract.
 `inspect-json` request, and every stdout line is a verdict. This keeps the Rust
 scanner process warm for benchmark runners, MCP wrappers, and managed agent
 runtimes instead of paying process startup per scan.
+
+`serve` is the persistent supervision runtime. It exposes strict structured
+content and authority contracts over a local Unix socket, Windows named pipe,
+or mutually authenticated private TCP connection. It embeds the scanner and
+layered signed policy evaluator, issues and consumes single-use execution
+tokens, owns protected HTTP credentials and capability-rooted filesystem
+handles, persists receipts and encrypted evidence/replay traces, and appends
+bounded privacy-preserving telemetry. Its trust boundaries are documented in
+[`GUARD_SUPERVISION_ADR.md`](GUARD_SUPERVISION_ADR.md).
+
+The agent-facing socket is a data-plane surface. Capability inventory is loaded
+only from the validated boot manifest; policy activation additionally requires
+a short-lived independently signed authorization bound to simulation evidence.
+Shadow and canary revisions remain staged and do not affect effective decisions.
+The operations endpoint separates enforcement readiness from telemetry pressure,
+policy divergence, circuit state, and bypass coverage.
 
 ## Python Package
 

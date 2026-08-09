@@ -5,8 +5,9 @@ Run one NanoClaw terminal with Armorer Guard enabled and one without it.
 ## Build Armorer Guard
 
 ```bash
-cd /Users/cristianleo/workplace/SecureNeural/Armorer-Guard
+cd /path/to/Armorer-Guard
 cargo build --release
+export ARMORER_GUARD_BIN="$PWD/target/release/armorer-guard"
 ```
 
 ## Terminal A: NanoClaw With Armorer Guard
@@ -16,22 +17,22 @@ SQLite modules complain about `NODE_MODULE_VERSION`, rebuild dependencies with
 the active Node version:
 
 ```bash
-cd /Users/cristianleo/workplace/SecureNeural/nanoclaw
+cd /path/to/nanoclaw
 pnpm rebuild better-sqlite3
 ```
 
 Then start with Armorer Guard:
 
 ```bash
-cd /Users/cristianleo/workplace/SecureNeural/nanoclaw
-export NANOCLAW_ARMORER_GUARD_BIN=/Users/cristianleo/workplace/SecureNeural/Armorer-Guard/target/release/armorer-guard
+cd /path/to/nanoclaw
+export NANOCLAW_ARMORER_GUARD_BIN="$ARMORER_GUARD_BIN"
 pnpm dev
 ```
 
 ## Terminal B: NanoClaw Without Armorer Guard
 
 ```bash
-cd /Users/cristianleo/workplace/SecureNeural/nanoclaw
+cd /path/to/nanoclaw
 unset NANOCLAW_ARMORER_GUARD_BIN
 pnpm dev
 ```

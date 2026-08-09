@@ -1,0 +1,14 @@
+{
+  "request_id": "authority/delete",
+  "capability_id": "record.delete",
+  "delegated_capabilities": ["record.delete"],
+  "operation_class": "destructive",
+  "purpose": "demo-cleanup",
+  "arguments": {"record_id": "record/123"},
+  "resource_type": "record",
+  "resource_id": "record/123",
+  "resource_tenant": "tenant/demo",
+  "data_classes": ["internal"],
+  "risk_score": 0.1,
+  "required_approval_role": "record_owner"
+}

@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://armorer.dev/schemas/armorer-guard-runtime.schema.json",
+  "title": "Armorer Guard runtime contracts",
+  "oneOf": [
+    { "$ref": "#/$defs/contentEvaluation" },
+    { "$ref": "#/$defs/authorityRequest" },
+    { "$ref": "#/$defs/policyBundle" },
+    { "$ref": "#/$defs/approvalChallengeRequest" },
+    { "$ref": "#/$defs/approvalConsumeRequest" },
+    { "$ref": "#/$defs/approvalReceipt" },
+    { "$ref": "#/$defs/executionToken" },
+    { "$ref": "#/$defs/executionDispatch" },
+    { "$ref": "#/$defs/executionReport" },
+    { "$ref": "#/$defs/executionReceipt" },
+    { "$ref": "#/$defs/evidenceAccess" },
+    { "$ref": "#/$defs/replayQuery" },
+    { "$ref": "#/$defs/httpBrokerRequest" },
+    { "$ref": "#/$defs/filesystemBrokerRequest" }
+  ],
+  "$defs": {
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agent_id", "tenant_id"],
+      "properties": {
+        "agent_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "identity_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "workload_identity": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "tenant_id": { "type": "string", "minLength": 1, "maxLength": 512 }
+      },
+      "oneOf": [
+        { "required": ["identity_id"] },
+        { "required": ["workload_identity"] }
+      ]
+    },
+    "contentSegment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["content_ref", "origin", "principal_id", "tenant_id", "trust", "data_classes", "instruction_authority", "retention", "text"],
+      "properties": {
+        "content_ref": { "type": "string", "pattern": "^content/sha256:[0-9a-f]{64}$" },
+        "origin": { "type": "string", "minLength": 1 },
+        "principal_id": { "type": "string", "minLength": 1 },
+        "tenant_id": { "type": "string", "minLength": 1 },
+        "trust": { "enum": ["platform", "trusted", "untrusted"] },
+        "data_classes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "instruction_authority": { "enum": ["system", "developer", "user", "none"] },
+        "retention": { "type": "string", "minLength": 1 },
+        "influenced_by": { "type": "array", "items": { "type": "string", "pattern": "^content/sha256:[0-9a-f]{64}$" }, "default": [] },
+        "text": { "type": "string", "maxLength": 1048576 }
+      }
+    },
+    "contentEvaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "request_id", "trace_id", "session_id", "subject", "segments"],
+      "properties": {
+        "schema_version": { "const": "armorer-guard-content-evaluation/v1" },
+        "request_id": { "type": "string", "minLength": 1 },
+        "trace_id": { "type": "string", "minLength": 1 },
+        "session_id": { "type": "string", "minLength": 1 },
+        "subject": { "$ref": "#/$defs/subject" },
+        "purpose": { "type": ["string", "null"] },
+        "allowed_context_origins": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "model_route": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["provider", "model_id", "region", "retention"],
+          "properties": {
+            "provider": { "type": "string", "minLength": 1, "maxLength": 512 },
+            "model_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+            "region": { "type": "string", "minLength": 1, "maxLength": 512 },
+            "retention": { "enum": ["none", "local_only", "provider_zero_retention"] },
+            "allowed_data_classes": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+          }
+        },
+        "segments": { "type": "array", "minItems": 1, "maxItems": 256, "items": { "$ref": "#/$defs/contentSegment" } },
+        "destination": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["destination_id", "tenant_id", "destination_type", "approved"],
+          "properties": {
+            "destination_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+            "tenant_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+            "destination_type": { "type": "string", "minLength": 1, "maxLength": 512 },
+            "approved": { "type": "boolean" },
+            "allowed_data_classes": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+          }
+        },
+        "memory_target": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["namespace", "key"],
+          "properties": {
+            "namespace": { "type": "string", "minLength": 1, "maxLength": 512, "pattern": "^[^\\s]+$" },
+            "key": { "type": "string", "minLength": 1, "maxLength": 512, "pattern": "^[^\\s]+$" }
+          }
+        }
+      }
+    },
+    "authorityRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "request_id", "subject", "delegation", "action", "resource", "influence", "context"],
+      "properties": {
+        "schema_version": { "const": "armorer-guard-authority-request/v2" },
+        "request_id": { "type": "string", "minLength": 1 },
+        "subject": { "$ref": "#/$defs/subject" },
+        "delegation": { "type": "object", "additionalProperties": false, "required": ["delegated_by", "capability_ids", "purpose", "depth", "expires_at", "signature"], "properties": { "delegated_by": {"type":"string"}, "capability_ids": {"type":"array","minItems":1,"items":{"type":"string"}}, "purpose":{"type":"string"}, "depth":{"type":"integer","minimum":0}, "expires_at":{"type":"integer"}, "signature":{"type":"string"} } },
+        "action": { "type": "object", "additionalProperties": false, "required": ["capability_id", "operation_class", "normalized_arguments"], "properties": { "capability_id":{"type":"string"}, "operation_class":{"type":"string"}, "normalized_arguments":true } },
+        "resource": { "type": "object", "additionalProperties": false, "required": ["resource_type", "resource_id", "tenant_id", "data_classes"], "properties": { "resource_type":{"type":"string"}, "resource_id":{"type":"string"}, "tenant_id":{"type":"string"}, "data_classes":{"type":"array","items":{"type":"string"}} } },
+        "influence": { "type": "object", "additionalProperties": false, "required": ["content_refs", "contains_untrusted_content"], "properties": { "content_refs":{"type":"array","items":{"type":"string","pattern":"^content/sha256:[0-9a-f]{64}$"}}, "contains_untrusted_content":{"type":"boolean"} } },
+        "context": { "type": "object", "additionalProperties": false, "required": ["trace_id", "session_id", "risk_score", "observed_at", "approval_receipts"], "properties": { "trace_id":{"type":"string"}, "session_id":{"type":"string"}, "risk_score":{"type":"number","minimum":0,"maximum":100}, "observed_at":{"type":"integer"}, "approval_receipts":{"type":"array","items":{"type":"string"}} } }
+      }
+    },
+    "policyBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "policy_id", "revision", "layer", "scope", "default_effect", "rules", "adaptive", "proposed_by", "proposed_at", "activation", "signatures"],
+      "properties": {
+        "schema_version": { "const": "armorer-guard-policy-bundle/v2" },
+        "policy_id": { "type": "string", "minLength": 1 },
+        "revision": { "type": "integer", "minimum": 1 },
+        "previous_revision": { "type": ["integer", "null"], "minimum": 1 },
+        "layer": { "enum": ["organization", "tenant", "agent", "adaptive"] },
+        "scope": { "type": "object" },
+        "default_effect": { "enum": ["allow", "deny", "require_approval"] },
+        "rules": { "type": "array" },
+        "adaptive": { "type": "object" },
+        "proposed_by": { "type": "string", "minLength": 1 },
+        "proposed_at": { "type": "integer", "minimum": 1 },
+        "expires_at": { "type": ["integer", "null"] },
+        "activation": { "type": "object" },
+        "signatures": { "type": "array", "minItems": 1 }
+      }
+    },
+    "approvalChallengeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "authority_request", "required_role", "expires_at", "maximum_usage_count"],
+      "properties": {
+        "schema_version": { "const": "armorer-guard-approval-challenge/v1" },
+        "authority_request": { "$ref": "#/$defs/authorityRequest" },
+        "required_role": { "type": "string", "minLength": 1 },
+        "expires_at": { "type": "integer", "minimum": 1 },
+        "maximum_usage_count": { "type": "integer", "minimum": 1, "maximum": 100 }
+      }
+    },
+    "approvalChallenge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "challenge_id", "request_id", "agent_id", "workload_identity", "tenant_id", "capability_id", "resource_type", "resource_id", "arguments_digest", "authority_binding_digest", "policy_revision", "required_role", "expires_at", "maximum_usage_count", "presentation"],
+      "properties": {
+        "schema_version": { "const": "armorer-guard-approval-challenge/v1" },
+        "challenge_id": { "type": "string" }, "request_id": { "type": "string" },
+        "agent_id": { "type": "string" }, "workload_identity": { "type": "string" },
+        "tenant_id": { "type": "string" }, "capability_id": { "type": "string" },
+        "resource_type": { "type": "string" }, "resource_id": { "type": "string" },
+        "arguments_digest": { "type": "string" }, "authority_binding_digest": { "type": "string" },
+        "policy_revision": { "type": "integer" }, "required_role": { "type": "string" },
+        "expires_at": { "type": "integer" }, "maximum_usage_count": { "type": "integer", "minimum": 1 },
+        "presentation": {
+          "type": "object", "additionalProperties": false,
+          "required": ["operation_class", "normalized_arguments", "destination", "data_classes", "content_refs", "contains_untrusted_content", "risk_score", "risk_uncertainty", "irreversible", "warnings"],
+          "properties": {
+            "operation_class": { "type": "string" }, "normalized_arguments": true, "destination": { "type": ["string", "null"] },
+            "data_classes": { "type": "array", "items": { "type": "string" } },
+            "content_refs": { "type": "array", "items": { "type": "string" } },
+            "contains_untrusted_content": { "type": "boolean" }, "risk_score": { "type": "number" }, "risk_uncertainty": { "type": ["number", "null"] },
+            "irreversible": { "type": "boolean" }, "warnings": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "approvalReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "receipt_id", "challenge", "approver_id", "approver_role", "approved_at", "expires_at", "maximum_usage_count", "signature"],
+      "properties": { "schema_version": { "const": "armorer-guard-approval-receipt/v1" }, "receipt_id":{"type":"string"}, "challenge":{"$ref":"#/$defs/approvalChallenge"}, "approver_id":{"type":"string"}, "approver_role":{"type":"string"}, "approved_at":{"type":"integer"}, "expires_at":{"type":"integer"}, "maximum_usage_count":{"type":"integer","minimum":1}, "signature":{"type":"string"} }
+    },
+    "approvalConsumeRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "receipt", "authority_request", "observed_at"],
+      "properties": {
+        "schema_version": { "const": "armorer-guard-approval-consume/v1" },
+        "receipt": { "$ref": "#/$defs/approvalReceipt" },
+        "authority_request": { "$ref": "#/$defs/authorityRequest" },
+        "observed_at": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "executionToken": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "token_id", "decision_id", "request_id", "agent_id", "workload_identity", "tenant_id", "capability_id", "resource_type", "resource_id", "arguments_digest", "policy_revision", "issued_at", "expires_at", "maximum_usage_count", "signature"],
+      "properties": { "schema_version": { "const": "armorer-guard-execution-token/v1" }, "token_id":{"type":"string"}, "decision_id":{"type":"string"}, "request_id":{"type":"string"}, "agent_id":{"type":"string"}, "workload_identity":{"type":"string"}, "tenant_id":{"type":"string"}, "capability_id":{"type":"string"}, "resource_type":{"type":"string"}, "resource_id":{"type":"string"}, "arguments_digest":{"type":"string"}, "policy_revision":{"type":"integer"}, "issued_at":{"type":"integer"}, "expires_at":{"type":"integer"}, "maximum_usage_count":{"const":1}, "signature":{"type":"string"} }
+    },
+    "executionDispatch": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "token", "observed_at"],
+      "properties": { "schema_version": { "const": "armorer-guard-execution-dispatch/v1" }, "token": { "$ref": "#/$defs/executionToken" }, "observed_at": { "type": "integer", "minimum": 1 } }
+    },
+    "executionReport": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "token", "downstream_dispatched", "downstream_outcome", "observed_at"],
+      "properties": { "schema_version": { "const": "armorer-guard-execution-report/v1" }, "token": { "$ref": "#/$defs/executionToken" }, "downstream_dispatched": { "type": "boolean" }, "downstream_outcome": { "type": "string" }, "observed_at": { "type": "integer", "minimum": 1 } }
+    },
+    "executionReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "receipt_id", "decision_id", "execution_token_id", "capability_id", "effect", "downstream_dispatched", "downstream_outcome", "policy_revision", "observed_at"],
+      "properties": { "schema_version": { "const": "armorer-guard-execution-receipt/v1" }, "receipt_id":{"type":"string"}, "decision_id":{"type":"string"}, "execution_token_id":{"type":["string","null"]}, "capability_id":{"type":"string"}, "effect":{"enum":["allow","deny","require_approval"]}, "downstream_dispatched":{"type":"boolean"}, "downstream_outcome":{"type":"string"}, "policy_revision":{"type":"integer"}, "observed_at":{"type":"integer"} }
+    },
+    "replayQuery": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "trace_id", "observed_at", "limit"],
+      "properties": { "schema_version": { "const": "armorer-guard-replay-query/v1" }, "trace_id": { "type": "string", "minLength": 1 }, "observed_at": { "type": "integer", "minimum": 1 }, "limit": { "type": "integer", "minimum": 1, "maximum": 1000 } }
+    },
+    "httpBrokerRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "token", "arguments", "observed_at"],
+      "properties": {
+        "schema_version": { "const": "armorer-guard-http-broker-request/v1" }, "token": { "$ref": "#/$defs/executionToken" }, "observed_at": { "type": "integer", "minimum": 1 },
+        "arguments": { "type": "object", "additionalProperties": false, "required": ["method", "url"], "properties": { "method": { "type": "string" }, "url": { "type": "string" }, "headers": { "type": "object", "additionalProperties": { "type": "string" } }, "body": { "type": ["string", "null"] } } }
+      }
+    },
+    "filesystemBrokerRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "token", "arguments", "observed_at"],
+      "properties": {
+        "schema_version": { "const": "armorer-guard-filesystem-broker-request/v1" }, "token": { "$ref": "#/$defs/executionToken" }, "observed_at": { "type": "integer", "minimum": 1 },
+        "arguments": { "type": "object", "additionalProperties": false, "required": ["operation", "path"], "properties": { "operation": { "enum": ["read", "write", "remove"] }, "path": { "type": "string" }, "content": { "type": ["string", "null"] } } }
+      }
+    },
+    "evidenceAccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "request_id", "trace_id", "content_ref", "tenant_id", "requester_id", "requester_role", "purpose", "observed_at", "expires_at", "signature"],
+      "properties": {
+        "schema_version": { "const": "armorer-guard-evidence-access/v1" },
+        "request_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "trace_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "content_ref": { "type": "string", "pattern": "^content/sha256:[0-9a-f]{64}$" },
+        "tenant_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "requester_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "requester_role": { "enum": ["evidence_reviewer", "security_reviewer", "incident_responder"] },
+        "purpose": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "observed_at": { "type": "integer", "minimum": 1 },
+        "expires_at": { "type": "integer", "minimum": 1 },
+        "signature": { "type": "string", "pattern": "^hmac-sha256:[0-9a-f]{64}$" }
+      }
+    }
+  }
+}
