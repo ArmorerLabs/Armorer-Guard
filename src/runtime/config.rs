@@ -450,6 +450,28 @@ fn value(args: &[String], name: &str) -> Option<String> {
 mod tests {
     use super::*;
 
+    #[cfg(not(windows))]
+    fn transport() -> TransportConfig {
+        TransportConfig {
+            kind: "unix_socket".into(),
+            endpoint: "/run/armorer/guard.sock".into(),
+            server_certificate_file: None,
+            server_private_key_file: None,
+            client_ca_file: None,
+        }
+    }
+
+    #[cfg(windows)]
+    fn transport() -> TransportConfig {
+        TransportConfig {
+            kind: "windows_named_pipe".into(),
+            endpoint: r"\\.\pipe\armorer-guard-test".into(),
+            server_certificate_file: None,
+            server_private_key_file: None,
+            client_ca_file: None,
+        }
+    }
+
     fn manifest() -> AgentManifest {
         AgentManifest {
             schema_version: MANIFEST_VERSION.to_string(),
@@ -458,13 +480,7 @@ mod tests {
                 workload_identity: "spiffe://acme/agent/law-agent".into(),
                 tenant_id: "tenant/acme".into(),
             },
-            transport: TransportConfig {
-                kind: "unix_socket".into(),
-                endpoint: "/run/armorer/guard.sock".into(),
-                server_certificate_file: None,
-                server_private_key_file: None,
-                client_ca_file: None,
-            },
+            transport: transport(),
             policy: PolicyConfig {
                 bootstrap_bundle: "/etc/guard/policy.json".into(),
                 verifier_key_file: "/etc/guard/policy.key".into(),

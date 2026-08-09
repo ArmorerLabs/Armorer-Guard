@@ -311,6 +311,7 @@ fn hex(bytes: &[u8]) -> String {
 mod tests {
     use super::*;
 
+    #[cfg(unix)]
     fn token(capability_id: &str) -> ExecutionToken {
         ExecutionToken {
             schema_version: "armorer-guard-execution-token/v1".to_string(),
