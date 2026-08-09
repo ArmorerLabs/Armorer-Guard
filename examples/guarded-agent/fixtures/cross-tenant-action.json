@@ -1,0 +1,13 @@
+{
+  "request_id": "authority/cross-tenant",
+  "capability_id": "record.read",
+  "delegated_capabilities": ["record.read"],
+  "operation_class": "read",
+  "purpose": "demo-review",
+  "arguments": {"record_id": "record/123"},
+  "resource_type": "record",
+  "resource_id": "record/123",
+  "resource_tenant": "tenant/other",
+  "data_classes": ["internal"],
+  "risk_score": 0.1
+}

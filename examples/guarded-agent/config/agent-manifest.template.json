@@ -1,0 +1,74 @@
+{
+  "schema_version": "armorer-guard-agent-manifest/v1",
+  "agent": {
+    "agent_id": "demo-agent",
+    "workload_identity": "spiffe://demo/agents/demo-agent",
+    "tenant_id": "tenant/demo"
+  },
+  "transport": {
+    "kind": "unix_socket",
+    "endpoint": "__SOCKET_PATH__"
+  },
+  "policy": {
+    "bootstrap_bundle": "__POLICY_PATH__",
+    "verifier_key_file": "__POLICY_KEY_PATH__"
+  },
+  "keys": {
+    "delegation_verifier_key_file": "__DELEGATION_KEY_PATH__",
+    "gateway_signing_key_file": "__GATEWAY_KEY_PATH__",
+    "approval_verifier_key_file": "__APPROVAL_KEY_PATH__",
+    "evidence_authorization_key_file": "__EVIDENCE_KEY_PATH__"
+  },
+  "models": [
+    {
+      "provider": "__MODEL_PROVIDER__",
+      "model_id": "__MODEL_ID__",
+      "regions": ["__MODEL_REGION__"],
+      "allowed_data_classes": ["internal"],
+      "retention": "provider_zero_retention"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "record.read",
+      "resource_type": "record",
+      "operation_class": "read",
+      "required_receipt": true,
+      "fail_mode": "closed",
+      "max_dispatches_per_minute": 60
+    },
+    {
+      "id": "record.delete",
+      "resource_type": "record",
+      "operation_class": "destructive",
+      "required_receipt": true,
+      "fail_mode": "closed",
+      "max_dispatches_per_minute": 5
+    }
+  ],
+  "destinations": [],
+  "approvals": [
+    {
+      "capability_id": "record.delete",
+      "required_role": "record_owner",
+      "maximum_ttl_seconds": 300,
+      "maximum_usage_count": 1
+    }
+  ],
+  "retention": {
+    "raw_evidence_seconds": 3600,
+    "telemetry_seconds": 86400,
+    "telemetry_max_bytes": 1048576
+  },
+  "adapters": [
+    {
+      "kind": "guarded-agent-example",
+      "enabled": true,
+      "fail_mode": "closed"
+    }
+  ],
+  "protected_memory_keys": ["identity.*", "system.*", "security.*"],
+  "http_brokers": [],
+  "filesystem_brokers": [],
+  "declared_direct_routes": []
+}

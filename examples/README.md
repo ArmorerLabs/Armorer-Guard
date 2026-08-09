@@ -1,20 +1,21 @@
 # Armorer Guard Integration Examples
 
-These examples show the intended runtime shape:
+These examples cover two integration levels:
 
-1. inspect untrusted text before it enters an agent context
-2. inspect model output before it becomes an action
-3. inspect tool-call arguments before execution
-4. log `reasons` and `confidence` for replayable evals
+1. Scanner integrations classify and sanitize text or tool arguments.
+2. The supervision sidecar enforces identity-bound authority immediately before
+   dispatch and records execution receipts.
 
-Armorer Guard is deliberately small. It does not replace least-privilege tool
-permissions, approval flows, or deterministic policy. It gives those systems a
-fast local risk signal.
+The scanner is a risk signal, not authorization. The sidecar adds strict policy,
+delegation verification, approval binding, single-use execution tokens, and
+receipts. It still does not replace OS sandboxing: protected capabilities and
+credentials must be reachable only through a Guard-mediated gateway.
 
 ## Examples
 
 | File | Use case |
 | --- | --- |
+| `guarded-agent/` | Run a real OpenAI Agents SDK agent with Guard-enforced tools, approval, tokens, and receipts |
 | `langchain_guard.py` | Wrap LangChain retrieved content and tool arguments |
 | `crewai_guard.py` | Guard a CrewAI tool before execution |
 | `node_middleware.mjs` | Use the Rust binary from Node/Express or Vercel-style handlers |
@@ -31,19 +32,39 @@ From the repository root:
 
 ```bash
 cargo build --release
-export ARMORER_GUARD_BIN="$PWD/target/release/armorer-guard"
 ```
 
-Python examples use the local package:
+Run the complete live guarded-agent demonstration first:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r examples/guarded-agent/requirements.txt
+export BWS_OPENROUTER_SECRET_ID='your-bitwarden-secret-uuid'
+PYTHONPATH=.:examples/guarded-agent .venv/bin/python examples/guarded-agent/run.py
+```
+
+The live script uses the OpenAI Agents SDK with OpenRouter and DeepSeek V4 Flash
+0731, loading the API credential from Bitwarden Secrets Manager or
+`OPENROUTER_API_KEY`. It creates an isolated temporary Guard configuration and
+removes it after the sidecar exits. The security-contract test under
+`guarded-agent/tests/` remains offline and credential-free.
+
+The smaller Python examples also use the local package:
 
 ```bash
 python3 -m pip install -e .
 ```
 
-Node examples call the Rust binary directly and do not require an npm package.
+The source-tree Python wrapper finds `target/release/armorer-guard` directly.
+Node examples use `ARMORER_GUARD_BIN` when set and otherwise resolve
+`armorer-guard` from `PATH`.
 
 The MCP proxy is available directly from the Rust CLI:
 
 ```bash
 armorer-guard mcp-proxy -- npx some-mcp-server
 ```
+
+That command enables scanner-only MCP filtering. Add `--sidecar-socket` and an
+identity-bound authority request for full pre-dispatch enforcement; see
+[`mcp_proxy.md`](mcp_proxy.md).

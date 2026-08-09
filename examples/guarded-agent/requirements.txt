@@ -1,0 +1,2 @@
+openai-agents==0.18.3
+rich==15.0.0

@@ -3,9 +3,27 @@
 Armorer Guard can wrap a line-delimited stdio MCP server and inspect
 `tools/call` arguments before they reach the server.
 
+This default mode is scanner-only filtering:
+
 ```bash
 armorer-guard mcp-proxy -- npx some-mcp-server
 ```
+
+For identity-bound authority enforcement, run the supervision sidecar and pass
+its socket to the proxy:
+
+```bash
+armorer-guard mcp-proxy \
+  --sidecar-socket /run/armorer-guard/law-agent.sock \
+  -- npx some-mcp-server
+```
+
+In this mode every `tools/call` must include a normalized
+`params._meta.armorer_guard.authority_request`. Guard evaluates policy, consumes
+the returned execution token once before forwarding, injects the token for the
+protected server, and records the downstream result. Missing authority metadata
+fails closed. Run [`guarded-agent/`](guarded-agent/) for a self-contained
+demonstration of the same decision and receipt flow.
 
 For a shorter first-time path, see [`docs/MCP_QUICKSTART.md`](../docs/MCP_QUICKSTART.md).
 
