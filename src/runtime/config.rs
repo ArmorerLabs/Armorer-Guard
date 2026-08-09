@@ -472,6 +472,13 @@ mod tests {
         }
     }
 
+    fn test_path(file_name: &str) -> String {
+        std::env::temp_dir()
+            .join(file_name)
+            .to_string_lossy()
+            .into_owned()
+    }
+
     fn manifest() -> AgentManifest {
         AgentManifest {
             schema_version: MANIFEST_VERSION.to_string(),
@@ -482,14 +489,14 @@ mod tests {
             },
             transport: transport(),
             policy: PolicyConfig {
-                bootstrap_bundle: "/etc/guard/policy.json".into(),
-                verifier_key_file: "/etc/guard/policy.key".into(),
+                bootstrap_bundle: test_path("guard-policy.json"),
+                verifier_key_file: test_path("guard-policy.key"),
             },
             keys: KeyConfig {
-                delegation_verifier_key_file: "/etc/guard/delegation.key".into(),
-                gateway_signing_key_file: "/etc/guard/gateway.key".into(),
-                approval_verifier_key_file: "/etc/guard/approval.key".into(),
-                evidence_authorization_key_file: "/etc/guard/evidence-authorization.key".into(),
+                delegation_verifier_key_file: test_path("guard-delegation.key"),
+                gateway_signing_key_file: test_path("guard-gateway.key"),
+                approval_verifier_key_file: test_path("guard-approval.key"),
+                evidence_authorization_key_file: test_path("guard-evidence-authorization.key"),
             },
             models: vec![ModelRoute {
                 provider: "openai".into(),
