@@ -1,7 +1,7 @@
 # Security Model
 
-Armorer Guard is a local risk signal and enforcement helper for AI-agent
-boundaries. It does not execute tools or replace sandboxing. Versioned
+Armorer Guard is a local agent supervision and capability enforcement runtime.
+It does not replace OS sandboxing. Versioned
 `armorer-guard-policy-bundle/v1` policies can enforce least-privilege decisions
 for trusted identity, delegation, action, and resource context before a host
 executes a tool.
@@ -28,12 +28,14 @@ powerful:
 | Outbound sends | scan Slack, email, webhook, PR, issue, or API payloads |
 | Memory writes | scan proposed memories before persistence |
 
-## What Guard Does Not Catch
+## Enforcement Boundary
 
-- It is not a sandbox and cannot contain a tool after it executes.
-- Text inspection alone is not authorization. Identity authorization requires
-  a validated policy bundle and trusted `armorer-guard-authority-request/v1`
-  context supplied by the host.
+- It is not an OS sandbox. Protected effects require the capability gateway,
+  isolated credentials, and egress controls; a convenience wrapper is not a
+  security boundary when an agent retains an unwrapped credential.
+- Text inspection is never authorization. Action Guard consumes an exact
+  `armorer-guard-authority-request/v2`; an allow yields a signed token, which
+  must be atomically consumed before dispatch and receipted after the outcome.
 - It does not make scanner network calls or consult a cloud model at runtime.
 - MCP proxy v1 expects line-delimited stdio JSON-RPC, not Content-Length framed transport.
 - The semantic model is lightweight and local; use logs and feedback to tune deployment policy.
@@ -66,3 +68,16 @@ delegation, Guard tampering, and untrusted privilege expansion. Adaptive policy
 is `tightening_only`: it may deny or require approval at elevated risk, but it
 can never grant or expand authority. Allow rules must bind a concrete agent or
 identity and require a capability or explicit approval.
+
+Raw retained evidence is encrypted locally with ChaCha20-Poly1305 and is not
+included in exported telemetry. Telemetry contains content hashes, provenance,
+identity/resource references, policy decisions, reason codes, and enforcement
+outcomes. The local spool is bounded and rotated; ordinary enforcement has no
+network dependency.
+
+Full authority requests retained for deterministic replay are encrypted in a
+separate local spool with bounded retention. Replay re-evaluates policy only; it
+does not issue a token or dispatch an effect. Credential-owning HTTP brokers
+reject redirects and agent-supplied authentication headers, inject the exact
+signed execution token for downstream verification, and never return the
+protected credential to the agent.

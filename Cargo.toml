@@ -2,7 +2,7 @@
 name = "armorer-guard"
 version = "0.4.0"
 edition = "2021"
-description = "Fast local Rust scanner for AI-agent prompt injection, credential leaks, exfiltration, and risky tool calls."
+description = "Local-first agent supervision sidecar and capability-enforcement runtime."
 readme = "README.md"
 homepage = "https://github.com/ArmorerLabs/Armorer-Guard"
 repository = "https://github.com/ArmorerLabs/Armorer-Guard"
@@ -24,6 +24,11 @@ include = [
     "/docs/RELEASE_NOTES_V030.md",
     "/docs/RESULTS.md",
     "/docs/SECURITY_MODEL.md",
+    "/docs/GUARD_SUPERVISION_ADR.md",
+    "/docs/USER_CONFIGURATION.md",
+    "/docs/OWASP_AGENTIC_TOP10_ASSURANCE.md",
+    "/docs/OPERATIONS.md",
+    "/docs/SECURITY_ASSESSMENT_SCOPE.md",
     "/docs/assets/**",
     "/examples/README.md",
     "/examples/claude-code-hook.md",
@@ -35,8 +40,15 @@ include = [
     "/examples/mcp_tool_gate.py",
     "/examples/nanoclaw.md",
     "/examples/node_middleware.mjs",
+    "/examples/agent-manifest.json",
     "/fixtures/*.jsonl",
+    "/fixtures/*.json",
+    "/benchmarks/results/*.json",
+    "/scripts/benchmark_agent_memory_guard.py",
+    "/scripts/benchmark_sidecar.py",
     "/scripts/smoke.sh",
+    "/packaging/**",
+    "/schemas/**",
     "/src/**",
 ]
 
@@ -44,3 +56,14 @@ include = [
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10"
+chacha20poly1305 = "0.10"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+rustls-pemfile = "2.2"
+cap-std = "3.4"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+
+[target.'cfg(windows)'.dependencies]
+winpipe = { version = "0.1.1", default-features = false }
+
+[dev-dependencies]
+rcgen = "0.13"

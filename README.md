@@ -2,10 +2,10 @@
 
 # Armorer Guard
 
-### Local Rust MCP security before tool calls execute
+### Local-first agent supervision and capability enforcement
 
-Protect AI-agent prompts, model output, and MCP `tools/call` arguments before
-they become actions.
+Inspect information crossing an agent and enforce identity- and policy-bound
+authority before effects occur.
 
 [![Rust](https://img.shields.io/badge/core-Rust-black?logo=rust)](https://www.rust-lang.org/)
 [![Python](https://img.shields.io/badge/python-supported-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -39,10 +39,20 @@ npm install @armorerlabs/guard
 
 ![Armorer Guard MCP proxy demo](docs/assets/armorer-guard-v023-mcp-demo.gif)
 
-Armorer Guard is a tiny, local-first scanner built for the hot path of agent
-runtimes. It redacts secrets, detects prompt injection, flags exfiltration,
-identifies dangerous tool calls, and returns machine-readable reasons your agent
-or orchestrator can enforce.
+Armorer Guard is a local-first supervision runtime. Its Rust scanner still
+redacts secrets and detects prompt injection, but the persistent sidecar also
+controls context, model traffic, capabilities, approvals, dispatch tokens,
+egress, provenance, telemetry, simulation, rollout, and execution receipts.
+
+Guard can also run as a persistent local supervision kernel over a Unix socket,
+Windows named pipe, or mutually authenticated private TCP connection.
+It evaluates structured input, context, model request/response, action, and
+output boundaries while preserving provenance and writing local enforcement
+telemetry. See [`docs/GUARD_SUPERVISION_ADR.md`](docs/GUARD_SUPERVISION_ADR.md).
+Agent setup is documented in
+[`docs/USER_CONFIGURATION.md`](docs/USER_CONFIGURATION.md), and executable OWASP
+coverage is mapped in
+[`docs/OWASP_AGENTIC_TOP10_ASSURANCE.md`](docs/OWASP_AGENTIC_TOP10_ASSURANCE.md).
 
 ## Trust Box
 

@@ -371,15 +371,19 @@ fn guard_tampering_action(action: &str) -> bool {
     )
 }
 
+struct DecisionOutcome {
+    effect: PolicyEffect,
+    source: &'static str,
+    matched_rule_ids: Vec<String>,
+    reason_codes: Vec<String>,
+    adaptive: bool,
+}
+
 fn decision(
     bundle: &PolicyBundle,
     request: &AuthorityRequest,
     digest: String,
-    effect: PolicyEffect,
-    source: &str,
-    matched_rule_ids: Vec<String>,
-    reason_codes: Vec<String>,
-    adaptive: bool,
+    outcome: DecisionOutcome,
 ) -> PolicyDecision {
     PolicyDecision {
         schema_version: DECISION_VERSION,
@@ -387,11 +391,11 @@ fn decision(
         policy_id: bundle.policy_id.clone(),
         policy_revision: bundle.revision,
         policy_digest: digest,
-        effect,
-        decision_source: source.to_string(),
-        matched_rule_ids,
-        reason_codes,
-        adaptive_tightening_applied: adaptive,
+        effect: outcome.effect,
+        decision_source: outcome.source.to_string(),
+        matched_rule_ids: outcome.matched_rule_ids,
+        reason_codes: outcome.reason_codes,
+        adaptive_tightening_applied: outcome.adaptive,
         authority_expanded: false,
     }
 }
@@ -408,11 +412,13 @@ pub fn evaluate_policy(
             bundle,
             request,
             digest,
-            PolicyEffect::Deny,
-            "fixed_invariant",
-            vec![],
-            vec!["fixed:cross_tenant_denied".to_string()],
-            false,
+            DecisionOutcome {
+                effect: PolicyEffect::Deny,
+                source: "fixed_invariant",
+                matched_rule_ids: vec![],
+                reason_codes: vec!["fixed:cross_tenant_denied".to_string()],
+                adaptive: false,
+            },
         ));
     }
     if !request.delegation.signature_verified
@@ -422,11 +428,13 @@ pub fn evaluate_policy(
             bundle,
             request,
             digest,
-            PolicyEffect::Deny,
-            "fixed_invariant",
-            vec![],
-            vec!["fixed:delegation_invalid".to_string()],
-            false,
+            DecisionOutcome {
+                effect: PolicyEffect::Deny,
+                source: "fixed_invariant",
+                matched_rule_ids: vec![],
+                reason_codes: vec!["fixed:delegation_invalid".to_string()],
+                adaptive: false,
+            },
         ));
     }
     if guard_tampering_action(&request.action) {
@@ -434,11 +442,13 @@ pub fn evaluate_policy(
             bundle,
             request,
             digest,
-            PolicyEffect::Deny,
-            "fixed_invariant",
-            vec![],
-            vec!["fixed:guard_tampering_denied".to_string()],
-            false,
+            DecisionOutcome {
+                effect: PolicyEffect::Deny,
+                source: "fixed_invariant",
+                matched_rule_ids: vec![],
+                reason_codes: vec!["fixed:guard_tampering_denied".to_string()],
+                adaptive: false,
+            },
         ));
     }
     if privilege_expansion_action(&request.action)
@@ -452,11 +462,13 @@ pub fn evaluate_policy(
             bundle,
             request,
             digest,
-            PolicyEffect::Deny,
-            "fixed_invariant",
-            vec![],
-            vec!["fixed:untrusted_privilege_expansion_denied".to_string()],
-            false,
+            DecisionOutcome {
+                effect: PolicyEffect::Deny,
+                source: "fixed_invariant",
+                matched_rule_ids: vec![],
+                reason_codes: vec!["fixed:untrusted_privilege_expansion_denied".to_string()],
+                adaptive: false,
+            },
         ));
     }
     if request.context.risk_score >= bundle.adaptive.block_risk_threshold {
@@ -464,11 +476,13 @@ pub fn evaluate_policy(
             bundle,
             request,
             digest,
-            PolicyEffect::Deny,
-            "adaptive",
-            vec![],
-            vec!["adaptive:risk_block_threshold".to_string()],
-            true,
+            DecisionOutcome {
+                effect: PolicyEffect::Deny,
+                source: "adaptive",
+                matched_rule_ids: vec![],
+                reason_codes: vec!["adaptive:risk_block_threshold".to_string()],
+                adaptive: true,
+            },
         ));
     }
 
@@ -538,7 +552,16 @@ pub fn evaluate_policy(
         adaptive = true;
     }
     Ok(decision(
-        bundle, request, digest, effect, source, matched, reasons, adaptive,
+        bundle,
+        request,
+        digest,
+        DecisionOutcome {
+            effect,
+            source,
+            matched_rule_ids: matched,
+            reason_codes: reasons,
+            adaptive,
+        },
     ))
 }
 

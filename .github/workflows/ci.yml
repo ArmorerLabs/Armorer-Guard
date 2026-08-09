@@ -24,6 +24,9 @@ jobs:
       - name: Test
         run: cargo test --locked
 
+      - name: Clippy
+        run: cargo clippy --all-targets --locked -- -D warnings
+
       - name: Build release binary
         run: cargo build --release --locked
 
@@ -46,3 +49,7 @@ jobs:
         shell: bash
         run: |
           ARMORER_GUARD_BIN="$PWD/target/release/armorer-guard" npm test --prefix npm/armorer-guard
+
+      - name: Validate runtime manifest
+        if: runner.os != 'Windows'
+        run: target/release/armorer-guard validate --config fixtures/runtime-agent-manifest.json

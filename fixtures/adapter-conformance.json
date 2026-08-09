@@ -1,0 +1,26 @@
+{
+  "schema_version": "armorer-guard-adapter-conformance/v1",
+  "routes": [
+    { "python": "input", "typescript": "input", "method": "POST", "path": "/v1/input/evaluate" },
+    { "python": "context", "typescript": "context", "method": "POST", "path": "/v1/context/evaluate" },
+    { "python": "model_request", "typescript": "modelRequest", "method": "POST", "path": "/v1/model/request/evaluate" },
+    { "python": "model_response", "typescript": "modelResponse", "method": "POST", "path": "/v1/model/response/evaluate" },
+    { "python": "tool_result", "typescript": "toolResult", "method": "POST", "path": "/v1/tool/result/evaluate" },
+    { "python": "memory_write", "typescript": "memoryWrite", "method": "POST", "path": "/v1/memory/write/evaluate" },
+    { "python": "memory_read", "typescript": "memoryRead", "method": "POST", "path": "/v1/memory/read/evaluate" },
+    { "python": "inter_agent", "typescript": "interAgent", "method": "POST", "path": "/v1/inter-agent/evaluate" },
+    { "python": "action", "typescript": "action", "method": "POST", "path": "/v1/action/evaluate" },
+    { "python": "output", "typescript": "output", "method": "POST", "path": "/v1/output/evaluate" },
+    { "python": "create_approval_challenge", "typescript": "createApprovalChallenge", "method": "POST", "path": "/v1/approvals/challenges" },
+    { "python": "consume_approval", "typescript": "consumeApproval", "method": "POST", "path": "/v1/approvals/consume" },
+    { "python": "authorize_execution", "typescript": "authorizeExecution", "method": "POST", "path": "/v1/executions/authorize" },
+    { "python": "record_execution", "typescript": "recordExecution", "method": "POST", "path": "/v1/executions/receipts" },
+    { "python": "broker_http", "typescript": "brokerHttp", "method": "POST", "path": "/v1/gateway/http" },
+    { "python": "broker_filesystem", "typescript": "brokerFilesystem", "method": "POST", "path": "/v1/gateway/filesystem" },
+    { "python": "replay_trace", "typescript": "replayTrace", "method": "POST", "path": "/v1/replay/traces" },
+    { "python": "capabilities", "typescript": "capabilities", "method": "GET", "path": "/v1/capabilities" },
+    { "python": "features", "typescript": "features", "method": "GET", "path": "/v1/features" },
+    { "python": "enforcement_coverage", "typescript": "enforcementCoverage", "method": "GET", "path": "/v1/enforcement/coverage" },
+    { "python": "operational_status", "typescript": "operationalStatus", "method": "GET", "path": "/v1/operations/status" }
+  ]
+}

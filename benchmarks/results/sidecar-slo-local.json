@@ -1,0 +1,26 @@
+{
+  "action": {
+    "mean_ms": 0.964,
+    "p50_ms": 0.494,
+    "p95_ms": 5.674,
+    "p99_ms": 10.249
+  },
+  "action_decision_effect": "allow",
+  "artifact": "target/release/armorer-guard",
+  "artifact_sha256": "74f7d437fcb1f7527af1b2903d8c2452100bd2d5c336bed69b07d4d6223b90bc",
+  "captured_at": 1786228026,
+  "iterations": 500,
+  "ordinary_text_inspection": {
+    "mean_ms": 19.475,
+    "p50_ms": 4.353,
+    "p95_ms": 12.013,
+    "p99_ms": 419.895
+  },
+  "platform": "Linux-6.12.62+rpt-rpi-2712-aarch64-with-glibc2.36",
+  "schema_version": "armorer-guard-slo-benchmark/v1",
+  "targets_ms": {
+    "action_p95": 10,
+    "ordinary_text_inspection_p95": 50
+  },
+  "transport": "unix_socket"
+}

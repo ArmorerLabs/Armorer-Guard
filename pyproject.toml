@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "armorer-guard"
 version = "0.4.0"
-description = "Binary scanner package for Armorer Guard."
+description = "Local-first agent supervision sidecar and capability-enforcement runtime."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"

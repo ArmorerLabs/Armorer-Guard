@@ -1,0 +1,28 @@
+[Unit]
+Description=Armorer Guard sidecar for %i
+After=local-fs.target
+Before=network.target
+
+[Service]
+Type=simple
+User=armorer-guard
+Group=armorer-guard
+ExecStart=/usr/local/bin/armorer-guard serve --config /etc/armorer-guard/%i.json --data-dir /var/lib/armorer-guard/%i
+Restart=on-failure
+RestartSec=2s
+RuntimeDirectory=armorer-guard
+StateDirectory=armorer-guard/%i
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/run/armorer-guard /var/lib/armorer-guard/%i
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+
+[Install]
+WantedBy=multi-user.target

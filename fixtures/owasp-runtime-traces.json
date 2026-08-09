@@ -1,0 +1,25 @@
+{
+  "schema_version": "armorer-guard-runtime-trace-suite/v1",
+  "traces": [
+    { "id": "attack/asi01/untrusted-goal-hijack", "class": "attack", "risk": "ASI01", "expected": "deny", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "utility/asi01/summarize-evidence", "class": "utility", "risk": "ASI01", "expected": "allow", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "attack/asi02/undeclared-tool", "class": "attack", "risk": "ASI02", "expected": "deny", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "utility/asi02/declared-read", "class": "utility", "risk": "ASI02", "expected": "allow", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "attack/asi03/cross-tenant-substitution", "class": "attack", "risk": "ASI03", "expected": "deny", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "utility/asi03/same-tenant-read", "class": "utility", "risk": "ASI03", "expected": "allow", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "attack/asi04/tampered-policy", "class": "attack", "risk": "ASI04", "expected": "reject", "evidence": "runtime::policy_control::tests::rejects_tampered_and_authority_expanding_adaptive_policy" },
+    { "id": "utility/asi04/signed-policy", "class": "utility", "risk": "ASI04", "expected": "accept", "evidence": "runtime::policy_control::tests::activation_and_rollback_are_exact" },
+    { "id": "attack/asi05/undeclared-code-execution", "class": "attack", "risk": "ASI05", "expected": "deny", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "utility/asi05/non-executing-read", "class": "utility", "risk": "ASI05", "expected": "allow", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "attack/asi06/protected-memory-poisoning", "class": "attack", "risk": "ASI06", "expected": "deny", "evidence": "runtime::tests::untrusted_writes_to_protected_memory_keys_are_denied" },
+    { "id": "utility/asi06/benign-memory-data", "class": "utility", "risk": "ASI06", "expected": "allow", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "attack/asi07/cross-tenant-agent-message", "class": "attack", "risk": "ASI07", "expected": "deny", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "utility/asi07/same-tenant-agent-message", "class": "utility", "risk": "ASI07", "expected": "allow", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "attack/asi08/excessive-delegation", "class": "attack", "risk": "ASI08", "expected": "deny", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "utility/asi08/bounded-delegation", "class": "utility", "risk": "ASI08", "expected": "allow", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "attack/asi09/unsupported-approval-claim", "class": "attack", "risk": "ASI09", "expected": "deny", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "utility/asi09/plain-response", "class": "utility", "risk": "ASI09", "expected": "allow", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "attack/asi10/guard-disable", "class": "attack", "risk": "ASI10", "expected": "deny", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" },
+    { "id": "utility/asi10/identity-bound-read", "class": "utility", "risk": "ASI10", "expected": "allow", "evidence": "runtime::tests::owasp_agentic_top10_runtime_controls_have_evidence" }
+  ]
+}

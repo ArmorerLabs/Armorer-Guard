@@ -1,0 +1,61 @@
+{
+  "schema_version": "armorer-guard-agent-manifest/v1",
+  "agent": {
+    "agent_id": "example-agent",
+    "workload_identity": "spiffe://example/agents/example-agent",
+    "tenant_id": "tenant/example"
+  },
+  "transport": {
+    "kind": "unix_socket",
+    "endpoint": "/run/armorer-guard/example.sock"
+  },
+  "policy": {
+    "bootstrap_bundle": "/etc/armorer-guard/runtime-policy.json",
+    "verifier_key_file": "/run/secrets/policy.key"
+  },
+  "keys": {
+    "delegation_verifier_key_file": "/run/secrets/delegation.key",
+    "gateway_signing_key_file": "/run/secrets/gateway.key",
+    "approval_verifier_key_file": "/run/secrets/approval.key",
+    "evidence_authorization_key_file": "/run/secrets/evidence-authorization.key"
+  },
+  "models": [
+    {
+      "provider": "openai",
+      "model_id": "approved-model",
+      "regions": ["us"],
+      "allowed_data_classes": ["internal"],
+      "retention": "provider_zero_retention"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "record.read",
+      "resource_type": "record",
+      "operation_class": "read",
+      "required_receipt": true,
+      "fail_mode": "closed",
+      "max_dispatches_per_minute": 60
+    }
+  ],
+  "destinations": [],
+  "approvals": [],
+  "retention": {
+    "raw_evidence_seconds": 3600,
+    "telemetry_seconds": 86400,
+    "telemetry_max_bytes": 1048576
+  },
+  "adapters": [
+    { "kind": "generic", "enabled": true, "fail_mode": "closed" }
+  ],
+  "protected_memory_keys": [
+    "identity.*",
+    "system.*",
+    "agent.goal",
+    "agent.capabilities",
+    "security.*"
+  ],
+  "http_brokers": [],
+  "filesystem_brokers": [],
+  "declared_direct_routes": []
+}

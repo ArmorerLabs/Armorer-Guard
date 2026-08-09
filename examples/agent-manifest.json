@@ -1,0 +1,92 @@
+{
+  "schema_version": "armorer-guard-agent-manifest/v1",
+  "agent": {
+    "agent_id": "law-agent",
+    "workload_identity": "spiffe://pichardo-law/agents/law-agent",
+    "tenant_id": "tenant/pichardo-law"
+  },
+  "transport": {
+    "kind": "unix_socket",
+    "endpoint": "/run/armorer-guard/law-agent.sock"
+  },
+  "policy": {
+    "bootstrap_bundle": "/etc/armorer-guard/law-agent-policy.json",
+    "verifier_key_file": "/run/secrets/armorer-guard-policy.key"
+  },
+  "keys": {
+    "delegation_verifier_key_file": "/run/secrets/armorer-guard-delegation.key",
+    "gateway_signing_key_file": "/run/secrets/armorer-guard-gateway.key",
+    "approval_verifier_key_file": "/run/secrets/armorer-guard-approval.key",
+    "evidence_authorization_key_file": "/run/secrets/armorer-guard-evidence-authorization.key"
+  },
+  "models": [
+    {
+      "provider": "openai",
+      "model_id": "approved-production-model",
+      "regions": ["us"],
+      "allowed_data_classes": ["legal_privileged"],
+      "retention": "provider_zero_retention"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "case.read",
+      "resource_type": "legal_case",
+      "operation_class": "read",
+      "required_receipt": true,
+      "fail_mode": "closed",
+      "max_dispatches_per_minute": 120
+    },
+    {
+      "id": "case.delete",
+      "resource_type": "legal_case",
+      "operation_class": "destructive",
+      "required_receipt": true,
+      "fail_mode": "closed",
+      "max_dispatches_per_minute": 5
+    }
+  ],
+  "destinations": [
+    {
+      "destination_id": "user/cristian-leo",
+      "tenant_id": "tenant/pichardo-law",
+      "allowed_data_classes": ["legal_privileged"],
+      "require_approval": false
+    }
+  ],
+  "approvals": [
+    {
+      "capability_id": "case.delete",
+      "required_role": "case_owner",
+      "maximum_ttl_seconds": 300,
+      "maximum_usage_count": 1
+    }
+  ],
+  "retention": {
+    "raw_evidence_seconds": 86400,
+    "telemetry_seconds": 604800,
+    "telemetry_max_bytes": 52428800
+  },
+  "adapters": [
+    {
+      "kind": "openai_agents",
+      "enabled": true,
+      "fail_mode": "closed"
+    },
+    {
+      "kind": "mcp_proxy",
+      "enabled": true,
+      "fail_mode": "closed"
+    }
+  ],
+  "protected_memory_keys": [
+    "identity.*",
+    "system.*",
+    "agent.goal",
+    "agent.capabilities",
+    "security.*"
+  ],
+  "http_brokers": [],
+  "filesystem_brokers": [],
+  "declared_direct_routes": []
+}
