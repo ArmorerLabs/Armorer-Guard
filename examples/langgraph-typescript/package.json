@@ -1,0 +1,27 @@
+{
+  "name": "@armorer/guard-langgraph-typescript-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "start": "tsx src/run.ts",
+    "test": "npm run check && node --import tsx --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "@armorerlabs/guard": "file:../../npm/armorer-guard",
+    "@langchain/core": "1.2.9",
+    "@langchain/langgraph": "1.4.12",
+    "@langchain/openai": "1.5.10",
+    "langchain": "1.5.10",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.13",
+    "tsx": "4.23.12",
+    "typescript": "6.0.3"
+  }
+}

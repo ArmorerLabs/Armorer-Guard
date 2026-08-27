@@ -1,0 +1,35 @@
+{
+  "name": "@armorerlabs/guard",
+  "version": "1.0.0",
+  "description": "Client SDK for connecting agent applications to an Armorer Guard runtime.",
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "files": [
+    "README.md",
+    "index.d.ts",
+    "index.js"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "ai-agents",
+    "security",
+    "langgraph",
+    "guardrails"
+  ],
+  "homepage": "https://github.com/ArmorerLabs/Armorer-Guard",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ArmorerLabs/Armorer-Guard.git",
+    "directory": "npm/armorer-guard"
+  },
+  "bugs": {
+    "url": "https://github.com/ArmorerLabs/Armorer-Guard/issues"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}
