@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: ["main"]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
@@ -24,6 +28,8 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
@@ -35,7 +41,7 @@ jobs:
 
       - name: Test Python client
         run: |
-          python -m pip install --upgrade pip build pytest
+          python -m pip install --upgrade pip build pytest check-jsonschema
           python -m pytest -q
           python -m build
 
@@ -49,5 +55,4 @@ jobs:
 
       - name: Validate public JSON schema
         run: |
-          python -m pip install check-jsonschema
           check-jsonschema --check-metaschema schemas/armorer-guard-runtime.schema.json
