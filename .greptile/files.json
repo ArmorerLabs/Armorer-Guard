@@ -1,0 +1,58 @@
+[
+  {
+    "path": "README.md",
+    "description": "Repository charter and boundary, and the closest thing this repo has to an AGENTS.md (there is no AGENTS.md and no CLAUDE.md). States that this is the customer-side integration surface only and that the Guard runtime, Rust source, policies, ML assets, reviewer implementation, and signing material ship separately. Defines the enforcement chain a reviewer must preserve: SDK, provisioned runtime, deny or approval or one-use token, credential-owning gateway, execution receipt."
+  },
+  {
+    "path": "CONTRIBUTING.md",
+    "description": "The binding contribution rules. Bans private runtime code, binaries, policies, ML and evaluation assets, reviewer implementations, production logs, credentials, tokens, and customer data. Requires that a contract change keep the Python and Node clients in sync and include a compatibility test, and lists the four verification commands CI mirrors."
+  },
+  {
+    "path": "SECURITY.md",
+    "description": "Private vulnerability reporting policy and the disclosure boundary. Names the issue classes that must not be discussed in public issues or pull request threads: authentication and transport bypasses, token replay, cross-tenant behavior, and sensitive-data handling. Use it to judge whether a pull request description or test fixture leaks something that belongs in a private report."
+  },
+  {
+    "path": "schemas/armorer-guard-runtime.schema.json",
+    "description": "The published public wire contract, JSON Schema 2020-12, at the stable $id https://armorer.dev/schemas/armorer-guard-runtime.schema.json, with 13 $defs: contentRef, subject, contentSegment, contentEvaluation, contentFinding, evaluatedSegment, contentDecision, authorityRequest, executionToken, authorityDecision, executionDispatch, executionReport, executionReceipt. Source of truth for every schema_version literal and envelope shape."
+  },
+  {
+    "path": "armorer_guard/contracts.py",
+    "description": "Typed Python view of the wire contract: the TrustClass, InstructionAuthority and ContentEffect literal unions plus the RuntimeSubject, ContentSegment, ContentEvaluationRequest, ContentFinding, ContentDecision and AuthorityRequest TypedDicts. The eight ContentEffect values and three trust classes must stay aligned with the JSON schema and with index.d.ts."
+  },
+  {
+    "path": "armorer_guard/client.py",
+    "description": "The Python fail-closed client: the _API_PATH versioned-path allowlist that blocks CRLF header injection, the complete-mTLS-identity check, request and response size limits, the /v1/ route helpers, the canonical_json, canonical_digest and sign_canonical primitives, and protect_capability, which enforces the decision, authorize_execution, downstream, record_execution ordering and the non-empty receipt_id requirement."
+  },
+  {
+    "path": "armorer_guard/adapters.py",
+    "description": "Framework adapters and _require_exact_content_admission: the five-member admitted-effect set plus the exact-segment reconstruction check that makes the generic adapters raise CONTENT_TRANSFORM_UNSUPPORTED rather than silently forward Guard-transformed content. Any new adapter must reuse these helpers instead of re-implementing effect handling."
+  },
+  {
+    "path": "npm/armorer-guard/index.js",
+    "description": "The Node client, which must stay behaviorally identical to armorer_guard/client.py: the same ADMITTED_CONTENT_EFFECTS set, the same requestPath allowlist and GET/POST restriction, the same size limits and error codes, protectCapability, and the LangGraph, OpenAI, CrewAI and webhook hook factories. Diff it against the Python client on every contract change."
+  },
+  {
+    "path": "npm/armorer-guard/index.d.ts",
+    "description": "The published TypeScript surface of the Node client. It is the third place a contract literal has to change, alongside contracts.py and the JSON schema, so use it to detect one-sided contract edits."
+  },
+  {
+    "path": "tests/test_python_package.py",
+    "description": "The Python contract tests that pin the review disciplines: the exact ordered list of public /v1/ routes, refusal to execute without dispatch authorization (EXECUTION_NOT_AUTHORIZED), refusal to return without a receipt (RECEIPT_MISSING), fail-closed behavior on transformed content, the complete-mTLS-identity requirement, request-path header-injection rejection, and the assertion that no embedded runtime API leaks back into the package."
+  },
+  {
+    "path": "npm/armorer-guard/test/client.test.js",
+    "description": "The Node mirror of tests/test_python_package.py, covering the same eight behaviors. A contract change that updates only one of these two files is exactly the parity defect CONTRIBUTING.md is written to prevent."
+  },
+  {
+    "path": "examples/langgraph-typescript/README.md",
+    "description": "The application-owner context for the reference integration: what the service-desk agent should do, the human-only boundary, and the should-versus-can misalignment table. It establishes the rule that ticket bodies and imported vendor notes are evidence and never instructions, which is what the trust and instruction_authority fields encode."
+  },
+  {
+    "path": "examples/langgraph-typescript/src/guard-supervisor.ts",
+    "description": "The reference supervisor: content-segment construction with trust and instruction_authority, the capability parity check, the exact-admission reconstruction logic, one-use token dispatch, receipt recording, and per-session content_ref tracking. The largest and most defect-prone file in the repository, and the model any new adapter should be reviewed against."
+  },
+  {
+    "path": ".github/workflows/ci.yml",
+    "description": "The only workflow in the repository. Its single matrix job produces the three check names branch protection requires: Public clients (ubuntu-latest), Public clients (macos-latest) and Public clients (windows-latest). Renaming the job or its name expression breaks the required-check contract. Actions are pinned to full commit SHAs and top-level permissions are contents: read."
+  }
+]

@@ -1,0 +1,60 @@
+{
+  "strictness": 2,
+  "commentTypes": ["logic", "syntax"],
+  "triggerOnUpdates": true,
+  "statusCheck": true,
+  "fixWithAI": true,
+  "excludeAuthors": ["dependabot[bot]", "renovate[bot]"],
+  "includeConfidenceScore": true,
+  "ignorePatterns": "npm/armorer-guard/package-lock.json\nexamples/langgraph-typescript/package-lock.json\nnode_modules/\n__pycache__/\n*.py[cod]\n*.egg-info/\nbuild/\ndist/\n.pytest_cache/\n.ruff_cache/\n.mypy_cache/\n.venv/\narmorer_guard/py.typed\nLICENSE.md\nNOTICE.md",
+  "rules": [
+    {
+      "id": "no-private-runtime-material",
+      "rule": "This repository is the public, customer-facing SDK surface only. Reject any change that adds Guard runtime code or binaries, Rust runtime source, policy files, ML or evaluation assets, reviewer implementations, production logs, customer prompts or data, credentials, tokens, or signing material. A new binary, archive, model file, key file, or vendored runtime blob is a blocking finding even when it is small or test-only. Deleting or weakening tests/test_python_package.py::test_client_package_contains_no_embedded_runtime_api reintroduces the runtime-bundled surface that v1.0 deliberately removed.",
+      "severity": "critical",
+      "scope": "**/*"
+    },
+    {
+      "id": "guard-decisions-fail-closed",
+      "rule": "Every Guard decision branch must fail closed. Content is admitted only when the effect is one of the five members of ADMITTED_CONTENT_EFFECTS in npm/armorer-guard/index.js and _ADMITTED_CONTENT_EFFECTS in armorer_guard/adapters.py: allow, allow_trusted_instruction, allow_untrusted_data, warn_and_allow, redact_and_allow. The other three ContentEffect values, quarantine, require_approval and deny, must never be admitted. Flag any optional chaining, ||/?? default, dict.get() fallback, or truthiness coercion that turns a missing or unrecognized effect, a missing execution_token, a non-true authorized, or a missing receipt_id into a permissive path, and flag any new except/catch on a transport, parse, size-limit or timeout error that returns a value instead of raising.",
+      "severity": "critical",
+      "scope": "npm/armorer-guard/*.js"
+    },
+    {
+      "id": "execution-token-and-receipt-order",
+      "rule": "A protected effect must keep the exact ordering in protect_capability: action() decision, then require_approval raises, then effect allow with an execution_token, then authorize_execution() returning authorized identically true, then the downstream call receiving the token verbatim, then record_execution() returning a non-empty string receipt_id, then the wrapped result. Do not mint, mutate, re-sign, cache, reuse, or reconstruct the one-use token, do not call the downstream before dispatch authorization, and do not return a result before the receipt is verified. The failure path that records downstream_outcome failed and raises RECEIPT_RECORDING_FAILED must stay.",
+      "severity": "critical",
+      "scope": "armorer_guard/*.py"
+    },
+    {
+      "id": "request-path-allowlist",
+      "rule": "Both clients concatenate the path straight into a hand-rolled HTTP/1.1 request line, so the versioned allowlist is the only thing preventing CRLF header injection. Every path must pass _API_PATH.fullmatch in Python and the anchored /^\\/v1\\/[A-Za-z0-9._~\\/-]+$/ test in Node, and only GET and POST are permitted. Flag any new endpoint helper that builds a wire request without that gate, any widening of the character class, any switch from fullmatch to match or search, any removal of the anchors, and any caller-controlled data interpolated into the request line or into the Host, Content-Type or Content-Length headers. Identifiers belong in the JSON body, not in a path or query string.",
+      "severity": "high",
+      "scope": "armorer_guard/client.py"
+    },
+    {
+      "id": "client-contract-parity",
+      "rule": "The Python and Node clients are one contract in two languages and nothing in CI compares them automatically, so a one-sided change is this repository's most likely defect. Any added, removed or renamed /v1/ route, schema_version literal, admitted effect, error code, or default (2s timeout, 1 MiB max body, the 64 KiB response slack) must land in armorer_guard/client.py, armorer_guard/contracts.py, npm/armorer-guard/index.js and npm/armorer-guard/index.d.ts together, with a matching test in both tests/test_python_package.py and npm/armorer-guard/test/client.test.js. canonical_json is implemented natively in Python and by hand in Node; both must stay byte-identical because the output is HMAC-signed.",
+      "severity": "high",
+      "scope": "npm/armorer-guard/index.d.ts"
+    },
+    {
+      "id": "schema-version-lockstep",
+      "rule": "schemas/armorer-guard-runtime.schema.json is the published wire contract at the stable $id https://armorer.dev/schemas/armorer-guard-runtime.schema.json with 13 $defs. Adding a required property, tightening a type, narrowing an enum, or removing a $defs entry is breaking and must bump the affected schema_version const, for example armorer-guard-authority-request/v2, rather than redefining an already-published version in place. Flag any $defs edit whose schema_version const is left untouched, and require the new literal to be mirrored in contracts.py, index.d.ts and the LangGraph example. CI runs check-jsonschema --check-metaschema, which proves the schema is well formed but does not detect a breaking change.",
+      "severity": "high",
+      "scope": "schemas/*.json"
+    },
+    {
+      "id": "untrusted-content-is-evidence",
+      "rule": "Retrieved text is evidence, never instructions. Every content segment must carry content_ref, origin, principal_id, tenant_id, trust, data_classes, instruction_authority and retention. Ticket bodies, tool results, imported vendor notes and model output must be trust untrusted with instruction_authority none; only genuine application-owner context may be trust platform or instruction_authority system or developer. Flag any promotion of retrieved or model-derived text to a higher trust class or authority, any tenant_id, principal_id or purpose read out of untrusted content, any content_ref not derived from the text itself, and any tool handler reachable without passing through the supervisor.",
+      "severity": "high",
+      "scope": "examples/langgraph-typescript/src/*.ts"
+    },
+    {
+      "id": "workflow-pinning-and-least-privilege",
+      "rule": "The single matrix job in .github/workflows/ci.yml produces the three check names branch protection requires: Public clients (ubuntu-latest), Public clients (macos-latest) and Public clients (windows-latest). Renaming the job, its name expression, or a matrix os value breaks the required-check contract and blocks every merge; step names may change freely. Keep every action pinned to a full 40-character commit SHA with a trailing version comment, and keep top-level permissions at contents: read. A write scope, pull_request_target, a secrets reference, a publish or release step, or a git push to the default branch needs explicit justification in this public repository.",
+      "severity": "medium",
+      "scope": ".github/workflows/*.yml"
+    }
+  ]
+}

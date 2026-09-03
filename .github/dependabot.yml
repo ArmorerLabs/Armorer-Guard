@@ -1,0 +1,82 @@
+# Dependency updates for the public Armorer Guard SDK.
+#
+# Ecosystems present in this repository, each pointed at a real manifest:
+#   github-actions  /                             .github/workflows/ci.yml
+#   npm             /npm/armorer-guard            package.json (published client)
+#   npm             /examples/langgraph-typescript package.json (LangGraph example)
+#   pip             /                             pyproject.toml
+#
+# Every action in ci.yml is pinned to a full commit SHA, so the github-actions
+# entry is what keeps those pins current. It runs weekly and puts every action
+# into a single grouped pull request.
+#
+# Package ecosystems run monthly and group minor and patch updates so routine
+# version bumps stay quiet. Security updates are enabled centrally and are not
+# affected by the schedules below.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "ci"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "npm"
+    directory: "/npm/armorer-guard"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+    groups:
+      client-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "npm"
+    directory: "/examples/langgraph-typescript"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+    ignore:
+      # The example consumes the in-repo client through a file: link.
+      - dependency-name: "@armorerlabs/guard"
+    groups:
+      example-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # pyproject.toml declares no runtime dependencies today, only the setuptools
+  # build backend. The entry is here so that the first dependency added to
+  # [project] is covered without a further config change.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "deps"
+    groups:
+      python-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
