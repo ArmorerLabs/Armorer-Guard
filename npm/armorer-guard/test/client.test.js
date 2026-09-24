@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import {
@@ -20,6 +21,13 @@ test("canonical values are stable", () => {
   assert.match(canonicalDigest(value), /^sha256:[0-9a-f]{64}$/);
   assert.match(signCanonical(Buffer.alloc(32, 7), value), /^hmac-sha256:[0-9a-f]{64}$/);
   assert.throws(() => canonicalJson({ invalid: undefined }), /only JSON values/);
+});
+
+test("canonical JSON matches the shared Python fixture", () => {
+  const fixture = new URL("../../../tests/fixtures/canonical-json.json", import.meta.url);
+  for (const { name, value, canonical } of JSON.parse(readFileSync(fixture, "utf8"))) {
+    assert.equal(canonicalJson(value), canonical, name);
+  }
 });
 
 test("sidecar methods use only public runtime routes", async () => {
