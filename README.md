@@ -5,7 +5,7 @@
 ### Public integration contracts for an Armorer-provisioned Guard runtime
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Node](https://img.shields.io/badge/node-22.19%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Node](https://img.shields.io/badge/node-22.23.4%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/SDK_license-MIT-blue)](LICENSE.md)
 
 </div>
